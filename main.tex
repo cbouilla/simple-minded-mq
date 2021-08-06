@@ -1,4 +1,5 @@
-\documentclass[a4paper]{article}
+\documentclass[a4paper,UKenglish,cleveref, autoref]{lipics-v2019}
+
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{amsmath,amsfonts,amssymb,amsthm}
@@ -12,7 +13,6 @@
 \usepackage[noend]{algpseudocode}
 \usepackage{algorithm}
 
-
 \newcommand{\bits}{\left\{0, 1\right\}}
 \newcommand{\bigO}[1]{\ensuremath{\mathcal{O}\left( #1 \right)} }
 \newcommand{\bigOsoft}[1]{\ensuremath{\mathcal{\tilde O}\left( #1 \right)} }
@@ -20,18 +20,44 @@
 \newcommand{\bigTheta}[1]{\ensuremath{\Theta\left( #1 \right)} }
 \newcommand{\Prob}{\mathrm{Pr}}
 
-
 \newcommand{\red}{\color{red}}
 \newcommand{\FIXME}{{\red \textbf{FIXME}}\xspace}
+\newcommand{\TODO}[1]{{\red \textbf{TODO}:} #1\xspace}
 
-
-\begin{document}
-
-\author{Charles Bouillaguet, Claire Delaplace, \\ Sorina Ionica and Monica Trimoska}
+\bibliographystyle{plainurl}% the mandatory bibstyle
 
 \title{A Simple Deterministic Algorithm for Systems of Quadratic Polynomials over $\mathbb{F}_2$}
 
+
+\author{Charles Bouillaguet}{LIP6 laboratory, Sorbonne Université, Paris, France}{charles.bouillaguet@lip6.fr}{https://orcid.org/0000-0001-9416-6244}{} 
+\author{Claire Delaplace}{MIS Laboratory, Université de Picardie Jules Verne, Amiens, France}{claire.delaplace@u-picardie.fr}{}{}
+\author{Monica Trimoska}{MIS Laboratory, Université de Picardie Jules Verne, Amiens, France}{monica.trimoska@u-picardie.fr}{}{}
+
+\authorrunning{C. Bouillaguet, C. Delaplace and M. Trimoska}
+
+\Copyright{Charles Bouillaguet, Monica Trimoska and Claire Delaplace}
+
+%\ccsdesc[100]{Theory of computation~Computational complexity and cryptography}
+%\ccsdesc[100]{Theory of computation}% Please choose ACM 2012 classifications from https://dl.acm.org/ccs/ccs_flat.cfm 
+
+\keywords{Boolean quadratic polynomials, exhaustive search, linear algebra}
+\supplement{Source code available at : \url{https://gitlab.lip6.fr/almasty/moebius/}}
+\funding{blabla ANR ASTRID PostCryptum}
+
+\hideLIPIcs
+\nolinenumbers
+
+\begin{document}
 \maketitle
+
+\begin{abstract}
+  This paper neds an abstract...
+\end{abstract}
+
+
+\clearpage
+
+\section{Introduction}
 
 We consider the problem of solving systems of multivariate quadratic boolean
 polynomial equations. Given a set of quadratic boolean polynomials
@@ -107,18 +133,25 @@ random input systems, the number of solutions is expected to be only one.
 
 The next family of algorithms are algebraic manipulation techniques that derive,
 in a way or another, from the Buchberger algorithm for computing Groebner
-bases. These algorithms are neither limited to quadratic polynomials nor to the
-boolean field. Their average case complexity is notoriously difficult to study,
-and it requires algebraic assumptions (regularity or semi-regularity) on the
-input polynomials~\cite{BardetFS15}.  The state of the art, at this point, seems
-to be the F4 and F5 algorithms by Faugère~\cite{F4,F5}, which reduce polynomial
-manipulations to efficient sparse linear algebra. Efficient implementations of
-F4 are available in off-the-shelf computer algebra systems. Faugere's algorithms
-have been successful in breaking some cryptosystems, most notably an instance of
-HFE with $n=80$ variables, which turned to be spectacularly well-suited to
-Groebner basis computations~\cite{FaugereJ03}. Variants of these algorithms have
-been rediscovered by the crypto community, notably by Courtois, Klimov, Patarin
-et Shamir under the name XL~\cite{CourtoisKPS00}.
+bases. Given a Groebner basis of the original polynomial equations, it is easy
+to read a potential solution. These algorithms are neither limited to quadratic
+polynomials nor to the boolean field. Their average case complexity is
+notoriously difficult to study, and it requires algebraic assumptions
+(regularity or semi-regularity) on the input polynomials~\cite{BardetFS15}.  The
+state of the art, at this point, seems to be the F4 and F5 algorithms by
+Faugère~\cite{F4,F5}. F4 is essentially a reformulation of the Buchberger
+algorithm that replaces polynomial manipulations by efficient sparse linear
+algebra and processes them in batch. F5 strives to eliminate some useless
+computation. In Bardet's thesis, it is shown that a simplified version of F5
+computes a Groebner basis of a regular sequence of polynomial in
+$\bigOsoft{2^{4.295n}}$ field operations, over any finite field. Efficient
+implementations of F4 are available in off-the-shelf computer algebra systems,
+notably \textsf{MAGMA}~\cite{MAGMA}. Faugere's algorithms have been successful
+in breaking some cryptosystems, most notably an instance of HFE with $n=80$
+variables, which turned to be spectacularly weak against Groebner basis
+computations~\cite{FaugereJ03}. Variants of these algorithms have been
+rediscovered by the crypto community under the name XL, notably by Courtois,
+Klimov, Patarin and Shamir~\cite{CourtoisKPS00}.
 
 It is well-known that solving systems by Groebner basis computation is easier on
 overdefined systems. This is the basis for the ``hybrid method'' which combines
@@ -126,25 +159,35 @@ exhaustive search and algebraic techniques: guess the values of some variables,
 then compute a Groebner basis of the remaining system which has become
 overdefined. The \textsf{BooleanSolve} algorithm of Bardet, Faugère, Salvy and
 Spaenlehauer~\cite{BardetFSS13} is the best at this point, with running time
-$\bigOsoft{2^{0.792n}}$ on average, under algebraic assumptions. Its inventors
-claim that it is slower than exhaustive search when $n \leq 200$, which seems to
-make it practically useless. The \textsf{Crossbred} algorithm of Joux and Vitse
-also belongs to this family ; its complexity is unknown, but its practical
-efficiency is spectacular: it has been used to solve a random system with
-$n = 74$ variables and $m=148$ equations (this would require about 150 million
-CPU hours using exhaustive search).
+$\bigOsoft{2^{0.792n}}$ on average, under algebraic assumptions. It guesses some
+variables, then checks if a polynomial combination of the remaining polynomial
+is equal to 1. When it is the case, then the guessed values are incorrect (by
+Hilbert's Nullstellensatz). This in turns is accomplished by deciding whether
+large sparse linear systems have a solution. Its inventors claim that it is
+slower than exhaustive search when $n \leq 200$, which seems to make it
+practically useless.
+
+The \textsf{Crossbred} algorithm of Joux and Vitse~\cite{JouxV17} also belongs
+to this family ; its complexity is unknown, but its practical efficiency is
+spectacular: it has been used to solve a random system with $n = 74$ variables
+and $m=148$ equations (this would require about 150 million CPU hours using
+exhaustive search). There is a public implementation that uses GPUs by
+Niederhagen, Ning and Yang~\cite{NiederhagenNY18}. This algorithm is discussed
+more in-depth in section~\ref{sec:extensions}.
 
 A completely different family of algorithms emerged in 2017 when Lokshtanov,
 Paturi, Tamaki, Williams and Yu~\cite{LokshtanovPTWY17} presented a randomized
-worst-case algorithm of complexity $\bigOsoft{2^{0.8765n}}$. It relies on
-approximations of high-degree polynomials by lower-degree functions. The
-technique was later improved by Björklund, Kaski and Williams, reaching
+algorithm of complexity $\bigOsoft{2^{0.8765n}}$. In strong contrast with almost
+all the previous ones, the algorithm does not require any assumption on the
+input polynomials, which is a theoretical breakthrough. The algorithm works by
+assembling considering high-degree polynomial that evaluates to 1 on partial
+solutions, then approximates it by lower-degree polynomials. The technique was
+later improved by Björklund, Kaski and Williams, reaching
 $\bigOsoft{2^{0.804n}}$, then again by Dinur~\cite{Dinur21}, reaching
 $\bigOsoft{2^{0.6943n}}$. Dinur proposed a ``concretely efficient'' lightweight
 version of his algorithm for the crypto community with complexity
 $\bigO{n^2 2^{0.815n}}$ using $n^2 2^{0.63n}$ bits of memory. In practice, the
 exponential space requirements of these algorithm make them unusable.
-
 
 
 \section{A Toy Example}
@@ -317,20 +360,21 @@ So the algorithm works by enumerating all possible $\hat y \in \bits^u$, solving
 $g_1(\hat y, z) = \dots = g_\ell(\hat y, z) = 0$, then checking each candidate
 solution $(\hat y, \hat z)$ against the original system.
 
-Write each $g_i$ as
-$g_i(y, z) = y \cdot Q_i \cdot y^t + y\cdot B_i \cdot z^t + C_i \cdot z^t +
-D_i$, where $Q_i$ is a $u \times u$ matrix, $B_i$ is a $u \times v$ matrix,
-$C_i$ is a length-$v$ vector and $D_i$ is a constant (this decomposition always
-exist).
+Write each $g_i$ as $g_i(y, z) = h_i(y) + y \cdot B_i z^t + C_i z^t$, where $h$ is
+a quadratic polynomial in $\mathbb{F}_2[y]$, $B_i$ is a $u \times v$ matrix,
+$C_i$ is a length-$v$ vector (this decomposition always exist).
 
 \begin{algorithm}
+  \caption{}
 \begin{algorithmic}[1]
-  \State Let $A$ denote a $\ell \times v$ matrix of bits and $b$ a size-$\ell$ vector of bits.
-  \State Compute a basis $g_1, \dots, g_\ell$ of $\mathcal{V}$.
+  \State Let $A$ denote a $\ell \times v$ matrix of bits and $b$ a size-$\ell$
+  vector of bits.  \State Compute a basis $g_1, \dots, g_\ell$ of $\mathcal{V}$.
+  \State Write
+  $g_i(y, z) = h_i(y) + y\cdot B_i \cdot z^t + C_i \cdot z^t + D_i$.
   \For{$\hat y \in \bits^u$}
 
   \For{$1 \leq i \leq \ell$}
-  \State $b[i] \gets  \hat y \cdot Q_i \cdot \hat y^t + D_i$
+  \State $b[i] \gets  h_i(\hat y)$
   \State $A[i, \cdot] \gets \hat y \cdot B_i + C_i$
   \EndFor
 
@@ -348,21 +392,29 @@ exist).
 
 The matrix $A$ has $v$ columns and $\ell = m - v(v-1)/2)$ rows. If it were not
 for the rounding of $v$ towards zero, it would be roughly square of size
-$(\sqrt{2m} + 5/8) \times (\sqrt{2m} + 1/8)$.
+$(\sqrt{2m} + 5/8) \times (\sqrt{2m} + 1/8)$. With the rounding, it necessarily
+has more rows than columns.
 
-Assembling the linear system (steps 4--6) requires $\bigO{\ell u(u+v)}$
-operations, while solving it using Gaussian elimination requires $\bigO{\ell v^2}$ operations.
+Assembling the linear system (steps 4--6) requires evaluating the $\ell$
+quadratic polynomials $h_i$'s in $u$ variables and performing $\ell$
+matrix-vector products with the $B_i$'s which are of size $u \times v$.  This
+requires $\bigO{\ell u(u+v)}$ operations, while solving the linear system using
+Gaussian elimination requires $\bigO{\ell v^2}$ operations.
 
 Let us assume that $m = \bigTheta{n}$, so that $v = \bigO{\sqrt{n}}$ and
-$\ell = \bigO{\sqrt{n}}$. Then assembling the linear system costs
-$\bigO{n^{2.5}}$ while solving it costs $\bigO{n^{1.5}}$.
+$\ell = \bigO{\sqrt{n}}$. Assembling the linear system costs $\bigO{n^{2.5}}$
+while solving it costs $\bigO{n^{1.5}}$. It is possible to decrease the cost of
+assembling the system to $\bigO{n}$, as described in
+section~\ref{sec:extensions}.
 
 The problematic part of the analysis consists in bounding the total number of
 iterations of the solution-checking loop (step 8--10). Morally speaking, because
 the system is overdefined, then most of the case there should be no solution at all.
 
+\section{Potential Extensions}
+\label{sec:extensions}
 
-
+\TODO{Discuter ici qu'on peut aller vers crossbred complet}
 
 \section{Practicality}
 
@@ -375,9 +427,7 @@ or sub-algorithms such as fast multivariate polynomial multiplication, fast
 multipoint evaluation/interpolation, groebner basis computations or large sparse
 linear system solvers. In addition, its space complexity is (almost) negligible.
 
-\bibliographystyle{plain}
 \bibliography{biblio}
-
 
 \end{document}
 
