@@ -51,7 +51,13 @@
 \maketitle
 
 \begin{abstract}
-  This paper neds an abstract...
+  We propose a simple deterministic algorithm for solving Boolean quadratic systems.
+  It can be seen as a particular case of already existing more sophisticated
+  algorithms. The main idea is to guess a certain number of variables until the system
+  can be solved by linearization. For a system of $m$ polynomials in $n$ variables, it has
+  a time complexity of roughly $2^{n-\sqrt{2m}}$. Although this is worst than more refined
+  algorithms such as \textsf{Crossbred}, the present method has the advantage of being
+  simpler to describe and easier to implement. It is also quite efficient in practice.
 \end{abstract}
 
 
