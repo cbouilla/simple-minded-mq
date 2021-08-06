@@ -92,7 +92,8 @@ state-of-the-art: a simple deterministic algorithm that achieves a
 sub-exponential advantage over exhaustive search in the average case, while
 being extremely simple and easy to implement. Its complexity is inferior to
 other existing algorithms, which are exponentially better, but its description
-is much simpler. The algorithm works as follows:
+is much simpler and its practical efficiency is much better. The algorithm works
+as follows:
 
 \begin{framed}
   Guess sufficiently many variables so that the remaining polynomial system can
@@ -106,7 +107,13 @@ $\left\lfloor \sqrt{2m} - 2 \right\rfloor$ last ones. There remain strictly
 less than $m$ (non-constant) monomials of degree less than two in the remaining
 variables, which enables the use of the linearization technique.
 
+This algorithm is a particularly simple special case of several other more
+complex algorithms from the cryptology community, including but not limited
+to~\cite{CourtoisKPS00,BettaleFP09,JouxV17}. However, to the best of our
+knowledge, this simple form was not discussed \textit{per se}.
+
 \subsection{Related Work}
+\label{sec:related}
 
 Exhaustive search is the baseline method to solve systems of boolean quadratic
 polynomials, with a running time $\bigOsoft{2^n}$ and negligible space
@@ -153,19 +160,30 @@ computations~\cite{FaugereJ03}. Variants of these algorithms have been
 rediscovered by the crypto community under the name XL, notably by Courtois,
 Klimov, Patarin and Shamir~\cite{CourtoisKPS00}.
 
+All these algorithms have exponential space complexity and existing
+implementation run into memory limitations even for a moderate number of
+variables. Implementing them is difficult, because they require either
+sophisticated data-structure for large-degree multivariate polynomials and/or
+sparse linear algebra over large matrices. Existing implementations are usually
+available inside full-blown computer algebra systems, which are large and
+complex software projects.
+
 It is well-known that solving systems by Groebner basis computation is easier on
-overdetermined systems. This is the basis for the ``hybrid method'' which combines
-exhaustive search and algebraic techniques: guess the values of some variables,
-then compute a Groebner basis of the remaining system which has become
-overdetermined. The \textsf{BooleanSolve} algorithm of Bardet, Faugère, Salvy and
-Spaenlehauer~\cite{BardetFSS13} is the best at this point, with running time
-$\bigOsoft{2^{0.792n}}$ on average, under algebraic assumptions. It guesses some
-variables, then checks if a polynomial combination of the remaining polynomial
-is equal to 1. When it is the case, then the guessed values are incorrect (by
-Hilbert's Nullstellensatz). This in turns is accomplished by deciding whether
-large sparse linear systems have a solution. Its inventors claim that it is
-slower than exhaustive search when $n \leq 200$, which seems to make it
-practically useless.
+overdetermined systems. This is the basis for the ``hybrid method'' which
+combines exhaustive search and algebraic techniques: guess the values of some
+variables, then compute a Groebner basis of the remaining system which has
+become overdetermined. Bettale, Faugère and Perret discuss the optimal number of
+variables to fix~\cite{BettaleFP09}. The \textsf{BooleanSolve} algorithm of
+Bardet, Faugère, Salvy and Spaenlehauer~\cite{BardetFSS13} is the best at this
+point, with running time $\bigOsoft{2^{0.792n}}$ on average, under algebraic
+assumptions. It guesses some variables, then checks if a polynomial combination
+of the remaining polynomial is equal to 1. When it is the case, then the guessed
+values are incorrect (by Hilbert's Nullstellensatz). This in turns is
+accomplished by deciding whether large sparse linear systems have a
+solution. Its inventors claim that it is slower than exhaustive search when
+$n \leq 200$, which seems to make it practically useless. While conceptually
+simple, the algorithm is likely difficult to implement because it requires a
+sparse linear system solver for large matrices (and it requires exponential space).
 
 The \textsf{Crossbred} algorithm of Joux and Vitse~\cite{JouxV17} also belongs
 to this family ; its complexity is unknown, but its practical efficiency is
@@ -186,8 +204,12 @@ later improved by Björklund, Kaski and Williams, reaching
 $\bigOsoft{2^{0.804n}}$, then again by Dinur~\cite{Dinur21}, reaching
 $\bigOsoft{2^{0.6943n}}$. Dinur proposed a ``concretely efficient'' lightweight
 version of his algorithm for the crypto community with complexity
-$\bigO{n^2 2^{0.815n}}$ using $n^2 2^{0.63n}$ bits of memory. In practice, the
-exponential space requirements of these algorithm make them unusable.
+$\bigO{n^2 2^{0.815n}}$ using $n^2 2^{0.63n}$ bits of memory. Implementing these
+algorithms is likely to be difficult and more importantly completely useless
+
+the
+exponential space requirements of these algorithm make it quite useless to
+produce an implementation.
 
 
 \section{A Toy Example}
@@ -316,6 +338,7 @@ solution is indeed a valid satisfying assignment.
 % We use hats to denote concrete values. By default, vectors are row vectors. The
 % transpose of a vector $x$ is the column vector $x^t$.
 
+\TODO{ceci contient l'amélioration car ça simplifie la description.}
 
 \begin{algorithm}[t]
   \caption{\label{the-algo}}
@@ -406,10 +429,26 @@ asymptotically negligible compared to the rest of the algorithm.  The total
 expected running time of the algorithm, under the heuristic assumption that the
 $b$ vectors are random, is $\bigO{n^{2.5} 2^{n - \sqrt{2m}}}$.
 
+\TODO{semi-regularité permet de se débarasser de l'hypothèse ?}
+
 \section{Potential Extensions}
 \label{sec:extensions}
 
-\TODO{Discuter ici qu'on peut aller vers crossbred complet}
+% \TODO{Monika : Discuter ici qu'on peut aller vers crossbred complet}
+
+% \TODO{Discuter ici qu'on peut améliorer la production du système linéaire avec un code de Gray}
+
+% sage: var('v', 'n', 'm')                                   
+% sage: eqs = m * (v + 1)                                    
+% sage: mon = v + binomial(v, 2) + binomial(v, 3)            
+% sage: solve(mon == eqs, v)
+% [v == -1/6*(6*m - 5)*(-I*sqrt(3) + 1)/(3*m + 1/3*sqrt(-72*m^3 + 261*m^2 - 150*m + 125/3))^(1/3) - 1/2*(3*m + 1/3*sqrt(-72*m^3 + 261*m^2 - 150*m + 125/3))^(1/3)*(I*sqrt(3) + 1), v == -1/6*(6*m - 5)*(I*sqrt(3) + 1)/(3*m + 1/3*sqrt(-72*m^3 + 261*m^2 - 150*m + 125/3))^(1/3) - 1/2*(3*m + 1/3*sqrt(-72*m^3 + 261*m^2 - 150*m + 125/3))^(1/3)*(-I*sqrt(3) + 1), v == 1/3*(6*m - 5)/(3*m + 1/3*sqrt(-72*m^3 + 261*m^2 - 150*m + 125/3))^(1/3) + (3*m + 1/3*sqrt(-72*m^3 + 261*m^2 - 150*m + 125/3))^(1/3)]
+
+% Affreux, on voudrait simplifier, pour cela on oublie simplement les équations de départ et on ne garde que les multiples
+
+% sage: eqs = m * (v)                                        
+% sage: solve(mon == eqs, v)                                 
+% [v == -sqrt(6*m - 5), v == sqrt(6*m - 5), v == 0]
 
 \section{Practicality}
 
