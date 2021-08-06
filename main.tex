@@ -302,13 +302,13 @@ following equations, taken by extracting non-pivotal rows:
 
 Enumerate all the possible values of the first three variables $(a, b, c)$ ; for
 each combination, solve the linear system $L(a,b,c) \cdot (d,e)^t = Q(a,b,c)$
-for $(d,e)$. Any solution of the linear system is also a solution of
-$\{f_1, f_3, f_2, f_2 + f_5\}$. Check candidate solutions against $f_2$ ; then
-they satisfy the original system.
+for $(d,e)$. Any solution of the linear system is automatically a satisfying
+assignment for $\{f_1, f_3, f_4, f_2 + f_5\}$. Check candidate solutions against
+$f_2$ ; they are then guaranteed to satisfy the original system.
 
 The linear system, which is overdetermined, is inconsistent except for
 $(a,b,c) = (1,0,1)$, where it admits a single solution $(e, d) = (0, 0)$. This
-solution is indeed a solution of the original polynomial system.
+solution is indeed a valid satisfying assignment.
 
 \section{Formal Description and Analysis}
 
@@ -316,7 +316,36 @@ solution is indeed a solution of the original polynomial system.
 % We use hats to denote concrete values. By default, vectors are row vectors. The
 % transpose of a vector $x$ is the column vector $x^t$.
 
-Suppose that the $n$ variables $x = (x_1, \dots, x_n)$ are (arbitrarily)
+
+\begin{algorithm}[t]
+  \caption{\label{the-algo}}
+\begin{algorithmic}[1]
+  \State Let $A$ denote a $\ell \times v$ matrix of bits and $b$ a size-$\ell$
+  vector of bits
+  \State Compute a basis $g_1, \dots, g_\ell$ of $\mathcal{V}$
+  \State Write
+  $g_i(y, z) = h_i(y) + y\cdot B_i \cdot z^t + c_i \cdot z^t + D_i$
+  \For{$\hat y \in \bits^u$}
+
+  \For{$1 \leq i \leq \ell$}
+  \State $b[i] \gets  h_i(\hat y)$
+  \State $A[i, \cdot] \gets \hat y \cdot B_i + c_i$
+  \EndFor
+
+  \State Solve the linear system $Az^t = b$
+
+  \For{each solution $\hat z$}
+  \If{$0 = f_1(\hat y, \hat z) = \dots = f_m(\hat y, \hat z)$}
+  \State \Return $(\hat y, \hat z)$
+  \EndIf
+  \EndFor
+  \EndFor
+  \State \Return $\bot$
+\end{algorithmic}
+\end{algorithm}
+
+
+Suppose that the $n$ variables $x = (x_1, \dots, x_n)$ are arbitrarily
 partitioned in two sets with $x = (y, z)$, $y = (y_1, \dots, y_{u})$,
 $z = (z_1, \dots, z_{v})$ and $u + v = n$. In the sequel, we choose
 $v = \left\lfloor \sqrt{2m} - 2 \right\rfloor$. This choice guarantees that
@@ -332,48 +361,17 @@ $z_i z_j$ are equal to zero. Computing a basis $g_1, \dots, g_\ell$ of
 $\mathcal{V}$ is easy (this can be done by putting the original polynomials in
 reduced row echelon form). The point is that once the values $y_1, \dots, y_u$
 are fixed, then the $g_i$ polynomials become linear and only depend on
-$z_1, \dots, z_v$.
-
-The algorithm works by enumerating all possible $\hat y \in \bits^u$, solving
+$z_1, \dots, z_v$. The algorithm works by enumerating all possible $\hat y \in \bits^u$, solving
 $g_1(\hat y, z) = \dots = g_\ell(\hat y, z) = 0$, then checking each candidate
 solution $(\hat y, \hat z)$ against the original system. This is shown in algorithm~\ref{the-algo}.
 
-Write each $g_i$ as $g_i(y, z) = h_i(y) + y \cdot B_i z^t + C_i z^t$, where $h$ is
-a quadratic polynomial in $\mathbb{F}_2[y]$, $B_i$ is a $u \times v$ matrix,
-$C_i$ is a length-$v$ vector (this decomposition always exist).
-
-\begin{algorithm}
-  \label{the-algo}
-  \caption{}
-\begin{algorithmic}[1]
-  \State Let $A$ denote a $\ell \times v$ matrix of bits and $b$ a size-$\ell$
-  vector of bits.  \State Compute a basis $g_1, \dots, g_\ell$ of $\mathcal{V}$.
-  \State Write
-  $g_i(y, z) = h_i(y) + y\cdot B_i \cdot z^t + C_i \cdot z^t + D_i$.
-  \For{$\hat y \in \bits^u$}
-
-  \For{$1 \leq i \leq \ell$}
-  \State $b[i] \gets  h_i(\hat y)$
-  \State $A[i, \cdot] \gets \hat y \cdot B_i + C_i$
-  \EndFor
-
-  \State Solve the linear system $Az^t = b$
-
-  \For{each solution $\hat z$}
-  \If{$0 = f_1(\hat y, \hat z) = \dots = f_m(\hat y, \hat z)$}
-  \State \Return $(\hat y, \hat z)$
-  \EndIf
-  \EndFor
-  \EndFor
-  \State \Return $\bot$
-\end{algorithmic}
-\end{algorithm}
+We write each $g_i$ as $g_i(y, z) = h_i(y) + y \cdot B_i z^t + c_i z^t$, where
+$h$ is a quadratic polynomial in $\mathbb{F}_2[y]$, $B_i$ is a $u \times v$
+matrix and $c_i$ is a length-$v$ vector (this decomposition always exist).
 
 Assuming that the input polynomials are linearly independent (which seems a mild
 assumption), then the subspace $\mathcal{V}$ has dimension
-$\ell = m - v(v-1)/2$.  The matrix $A$ has $v$ columns and $\ell$ rows. It
-follows that we always have $\ell \geq 5v/2$, \textit{i.e.} the matrix always
-has many more rows than columns.
+$\ell = m - v(v-1)/2$. Our choice of $v$ guarantees that $\ell \geq 5v/2$.
 
 Assembling the linear system (steps 4--6) requires evaluating the $\ell$
 quadratic polynomials $h_i$'s in $u$ variables and performing $\ell$
@@ -383,26 +381,30 @@ Gaussian elimination requires $\bigO{\ell v^2}$ operations.
 
 Let us assume that $m = \bigTheta{n}$, so that $v = \bigO{\sqrt{n}}$ and
 $\ell = \bigO{\sqrt{n}}$. Assembling the linear system costs $\bigO{n^{2.5}}$
-while solving it costs $\bigO{n^{1.5}}$. It is possible to decrease the cost of
-assembling the system to $\bigO{n}$, as described in
+while solving it costs $\bigO{n^{1.5}}$. The cost of assembling the linear
+system is dominated by the evaluation of the quadratic polynomials. It is
+possible to decrease this cost to $\bigO{n}$, as described in
 section~\ref{sec:extensions}.
 
 The main problem of this algorithm is that it is difficult to bound the total
-number of iterations of the solution-checking loop (step 8--10). Morally
+number of iterations of the solution-checking loop (step 8--11). Morally
 speaking, because the linear system $A z^t = b$ is quite overdetermined, then most
 of the time there should be no solution at all.
 
-Let us assume that the vectors $b$, which are the result of the evaluation of
-quadratic polynomials, are uniformly random. The image of $A$ is a subspace of
-dimension less than or equal to $v$ in $\bits^\ell$, therefore it contains the
-random vector $b$ with probability less than $2^{v-\ell}$. When the linear
-system is consistent, it has at most $2^v$ solutions. This yields a crude
-upper-bound on the expected number of solutions $N$ of each random linear
-system:
+Let us make the heuristic assumption that the vectors $b$ are uniformly random
+(in fact, they are the result of the evaluation of quadratic polynomials). The
+image of $A$ is a subspace of dimension less than or equal to $v$ in
+$\bits^\ell$, therefore it contains the random vector $b$ with probability less
+than $2^{v-\ell}$. When the linear system is consistent, it has at most $2^v$
+solutions. This yields a crude upper-bound on the expected number of solutions
+$N$ of each random linear system:
 \[
   E(N) \leq 2^v \mathrm{Pr}(\text{the linear system is consistent}) = 2^{2v - \ell} \leq 2^{-v/2}
 \]
-
+It follows that the total time spent checking solutions (in steps 8--11) is
+asymptotically negligible compared to the rest of the algorithm.  The total
+expected running time of the algorithm, under the heuristic assumption that the
+$b$ vectors are random, is $\bigO{n^{2.5} 2^{n - \sqrt{2m}}}$.
 
 \section{Potential Extensions}
 \label{sec:extensions}
