@@ -102,7 +102,7 @@ is much simpler. The algorithm works as follows:
 \end{framed}
 
 More precisely, guess the values of all variables except the
-$\left\lfloor \sqrt{2m} - 1/2 \right\rfloor$ last ones. There remain strictly
+$\left\lfloor \sqrt{2m} - 2 \right\rfloor$ last ones. There remain strictly
 less than $m$ (non-constant) monomials of degree less than two in the remaining
 variables, which enables the use of the linearization technique.
 
@@ -118,11 +118,11 @@ the factors hidden in the big Oh notation are extremely small. It follows that
 that runs faster on existing hardware than exhaustive search, for problem sizes
 that are feasible, is a significant achievement.
 
-Systems that are very underdefined ($n \geq m^2$) or very overdefined
+Systems that are very underdetermined ($n \geq m^2$) or very overdetermined
 ($m \geq 0.5 n^2$) can be solved in polynomial time by simple
 techniques~\cite{CourtoisGMT02}. This suggest that $m \approx n$ is the hardest
 case, and it is common in cryptology (we usually have $m=2n$ for encryption and
-$n = 2m$ or $n=3m$ for signatures). The overdefined case is relevant to us, as
+$n = 2m$ or $n=3m$ for signatures). The overdetermined case is relevant to us, as
 it is the linearization technique: there are
 $\binom{n}{2} + \binom{n}{1} + \binom{n}{0} = 1 + n(n+1)/2$ boolean monomials in
 $n$ variables ; consider each one as an independent fresh variable ; provided
@@ -154,10 +154,10 @@ rediscovered by the crypto community under the name XL, notably by Courtois,
 Klimov, Patarin and Shamir~\cite{CourtoisKPS00}.
 
 It is well-known that solving systems by Groebner basis computation is easier on
-overdefined systems. This is the basis for the ``hybrid method'' which combines
+overdetermined systems. This is the basis for the ``hybrid method'' which combines
 exhaustive search and algebraic techniques: guess the values of some variables,
 then compute a Groebner basis of the remaining system which has become
-overdefined. The \textsf{BooleanSolve} algorithm of Bardet, Faugère, Salvy and
+overdetermined. The \textsf{BooleanSolve} algorithm of Bardet, Faugère, Salvy and
 Spaenlehauer~\cite{BardetFSS13} is the best at this point, with running time
 $\bigOsoft{2^{0.792n}}$ on average, under algebraic assumptions. It guesses some
 variables, then checks if a polynomial combination of the remaining polynomial
@@ -312,59 +312,38 @@ solution is indeed a solution of the original polynomial system.
 
 \section{Formal Description and Analysis}
 
-% We analyze the algorithm under the assumption that no linear combination of the
-% input polynomials yields a linear equation. This implies in particular that the
-% input polynomials must be linearly independent. In addition, it is easy to get
-% rid of:
-% \begin{itemize}
-% \item If a linear combination of the quadratic polynomials yields zero, then one
-%   of the polynomials in the combination can be removed from the system.
-
-% \item If a linear combination of the quadratic polynomials yields one, then the
-%   system is inconsistent.
-
-% \item If a linear combination of the quadratic polynomials yields a non-constant
-%   linear equation, then this equation can be used to rewrite one variable in
-%   terms of the others. This removes one variable and one equation.
-% \end{itemize}
-
-% The above procedure can be iterated until the assumption is satisfied. Note that
-% it will be satisfied with overwhelming probability by random systems of
-% quadratic equations.
 
 % We use hats to denote concrete values. By default, vectors are row vectors. The
 % transpose of a vector $x$ is the column vector $x^t$.
 
-
 Suppose that the $n$ variables $x = (x_1, \dots, x_n)$ are (arbitrarily)
 partitioned in two sets with $x = (y, z)$, $y = (y_1, \dots, y_{u})$,
 $z = (z_1, \dots, z_{v})$ and $u + v = n$. In the sequel, we choose
-$v = \left\lfloor \sqrt{2m} - 1/2 \right\rfloor$. This choice guarantees that
-there are less than $m$ non-constant quadratic monomials in $z$. Indeed, there
-are $v(v+1)/2$ such monomials, and this evaluates to $m - 1/8$ without
-rounding $v$ towards zero.
+$v = \left\lfloor \sqrt{2m} - 2 \right\rfloor$. This choice guarantees that
+there are less than $m$ non-constant quadratic monomials in the variables
+$z_1, \dots, z_v$ and will make it possible to solve quadratic systems of $m$
+equations in $v$ variables by linearization. Indeed, there are $v(v+1)/2$ such
+monomials, and this evaluates to $m - 3v/2 - 2$ without rounding $v$ towards
+zero.
 
-%Note that there are $v(v-1)/2$ quadratic monomials in $v$.
-
-Consider the linear space spanned by $f_1, \dots, f_m$. Assuming that the input
-polynomials are linearly independent, it has dimension $m$.  Let $\mathcal{V}$
-denote the subspace where all the coefficients of all quadratic monomials
+Consider the linear space spanned by $f_1, \dots, f_m$, and let $\mathcal{V}$
+denote its subspace where all the coefficients of all quadratic monomials
 $z_i z_j$ are equal to zero. Computing a basis $g_1, \dots, g_\ell$ of
 $\mathcal{V}$ is easy (this can be done by putting the original polynomials in
-reduced row echelon form). There are $v(v-1) / 2$ such monomials, so that the
-dimension of $\mathcal{V}$ is always strictly greater than $v$. The point is
-that once the values $y_1, \dots, y_u$ are fixed, then the $g_i$ polynomials
-become linear and only depend on $z_1, \dots, z_v$.
+reduced row echelon form). The point is that once the values $y_1, \dots, y_u$
+are fixed, then the $g_i$ polynomials become linear and only depend on
+$z_1, \dots, z_v$.
 
-So the algorithm works by enumerating all possible $\hat y \in \bits^u$, solving
+The algorithm works by enumerating all possible $\hat y \in \bits^u$, solving
 $g_1(\hat y, z) = \dots = g_\ell(\hat y, z) = 0$, then checking each candidate
-solution $(\hat y, \hat z)$ against the original system.
+solution $(\hat y, \hat z)$ against the original system. This is shown in algorithm~\ref{the-algo}.
 
 Write each $g_i$ as $g_i(y, z) = h_i(y) + y \cdot B_i z^t + C_i z^t$, where $h$ is
 a quadratic polynomial in $\mathbb{F}_2[y]$, $B_i$ is a $u \times v$ matrix,
 $C_i$ is a length-$v$ vector (this decomposition always exist).
 
 \begin{algorithm}
+  \label{the-algo}
   \caption{}
 \begin{algorithmic}[1]
   \State Let $A$ denote a $\ell \times v$ matrix of bits and $b$ a size-$\ell$
@@ -390,10 +369,11 @@ $C_i$ is a length-$v$ vector (this decomposition always exist).
 \end{algorithmic}
 \end{algorithm}
 
-The matrix $A$ has $v$ columns and $\ell = m - v(v-1)/2)$ rows. If it were not
-for the rounding of $v$ towards zero, it would be roughly square of size
-$(\sqrt{2m} + 5/8) \times (\sqrt{2m} + 1/8)$. With the rounding, it necessarily
-has more rows than columns.
+Assuming that the input polynomials are linearly independent (which seems a mild
+assumption), then the subspace $\mathcal{V}$ has dimension
+$\ell = m - v(v-1)/2$.  The matrix $A$ has $v$ columns and $\ell$ rows. It
+follows that we always have $\ell \geq 5v/2$, \textit{i.e.} the matrix always
+has many more rows than columns.
 
 Assembling the linear system (steps 4--6) requires evaluating the $\ell$
 quadratic polynomials $h_i$'s in $u$ variables and performing $\ell$
@@ -407,9 +387,22 @@ while solving it costs $\bigO{n^{1.5}}$. It is possible to decrease the cost of
 assembling the system to $\bigO{n}$, as described in
 section~\ref{sec:extensions}.
 
-The problematic part of the analysis consists in bounding the total number of
-iterations of the solution-checking loop (step 8--10). Morally speaking, because
-the system is overdefined, then most of the case there should be no solution at all.
+The main problem of this algorithm is that it is difficult to bound the total
+number of iterations of the solution-checking loop (step 8--10). Morally
+speaking, because the linear system $A z^t = b$ is quite overdetermined, then most
+of the time there should be no solution at all.
+
+Let us assume that the vectors $b$, which are the result of the evaluation of
+quadratic polynomials, are uniformly random. The image of $A$ is a subspace of
+dimension less than or equal to $v$ in $\bits^\ell$, therefore it contains the
+random vector $b$ with probability less than $2^{v-\ell}$. When the linear
+system is consistent, it has at most $2^v$ solutions. This yields a crude
+upper-bound on the expected number of solutions $N$ of each random linear
+system:
+\[
+  E(N) \leq 2^v \mathrm{Pr}(\text{the linear system is consistent}) = 2^{2v - \ell} \leq 2^{-v/2}
+\]
+
 
 \section{Potential Extensions}
 \label{sec:extensions}

@@ -4,4 +4,4 @@
 *.out
 *.blg
 main.pdf
-
+/auto/main.el
