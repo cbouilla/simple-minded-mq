@@ -332,8 +332,8 @@ The linear system, which is overdetermined, is inconsistent except for
 $(a,b,c) = (1,0,1)$, where it admits a single solution $(e, d) = (0, 0)$. This
 solution is indeed a valid satisfying assignment.
 
-\section{Formal Description and Analysis}
-
+\section{Formal Description and Heuristic Analysis}
+\label{sec:description}
 
 % We use hats to denote concrete values. By default, vectors are row vectors. The
 % transpose of a vector $x$ is the column vector $x^t$.
@@ -396,7 +396,7 @@ Assuming that the input polynomials are linearly independent (which seems a mild
 assumption), then the subspace $\mathcal{V}$ has dimension
 $\ell = m - v(v-1)/2$. Our choice of $v$ guarantees that $\ell \geq 5v/2$.
 
-Assembling the linear system (steps 4--6) requires evaluating the $\ell$
+Assembling the linear system (steps 5--7) requires evaluating the $\ell$
 quadratic polynomials $h_i$'s in $u$ variables and performing $\ell$
 matrix-vector products with the $B_i$'s which are of size $u \times v$.  This
 requires $\bigO{\ell u(u+v)}$ operations, while solving the linear system using
@@ -410,7 +410,7 @@ possible to decrease this cost to $\bigO{n}$, as described in
 section~\ref{sec:extensions}.
 
 The main problem of this algorithm is that it is difficult to bound the total
-number of iterations of the solution-checking loop (step 8--11). Morally
+number of iterations of the solution-checking loop (step 9--11). Morally
 speaking, because the linear system $A z^t = b$ is quite overdetermined, then most
 of the time there should be no solution at all.
 
@@ -424,7 +424,7 @@ $N$ of each random linear system:
 \[
   E(N) \leq 2^v \mathrm{Pr}(\text{the linear system is consistent}) = 2^{2v - \ell} \leq 2^{-v/2}
 \]
-It follows that the total time spent checking solutions (in steps 8--11) is
+It follows that the total time spent checking solutions (in steps 9--11) is
 asymptotically negligible compared to the rest of the algorithm.  The total
 expected running time of the algorithm, under the heuristic assumption that the
 $b$ vectors are random, is $\bigO{n^{2.5} 2^{n - \sqrt{2m}}}$.
