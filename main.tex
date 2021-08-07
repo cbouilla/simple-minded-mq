@@ -519,12 +519,47 @@ update $A$ and $b$ to $\bigO{n}$.
 This algorithm can actually be implemented and executed. Toy implementations in
 a computer algebra systems such as \textsf{SageMath} are easy to write. A
 user-friendly and competitive implementation in pure C using low-level
-optimizations is about 650 lines long. This is possible because the algorithm
-itself is simple, and because it does not rely on sophisticated data-structures
-or sub-algorithms such as fast multivariate polynomial multiplication, fast
-multipoint evaluation/interpolation, groebner basis computations or large sparse
-linear system solvers. In addition, its space complexity is (almost) negligible.
+optimizations is about 650 lines long (it is accessible in the supplementary
+material). This is possible because the algorithm itself is simple, and because
+it does not rely on sophisticated data-structures or sub-algorithms such as fast
+multivariate polynomial multiplication, fast multipoint
+evaluation/interpolation, groebner basis computations or large sparse linear
+system solvers. In addition, its space complexity is (almost) negligible and it
+is trivially parallelizable.
 
+We discuss an interesting implementation aspect that leads to a speedup of about
+$40 \times$ on contemporary hardware, and makes the implementation
+competitive. The program spends much of its time solving billions of very small
+linear systems modulo 2 (say, $20 \times 10$). The key to obtain good software
+performance is \emph{vectorization}.
+
+Consider a Boolean circuit $\mathcal{C}$ with $(\ell+1)v$ input wires for $A$
+and $b$ as well as $v$ output wires for $z$ and two extra output wires $c$ and
+$f$. The $c$ output wire indicates whether the linear system $A z^t = b$ is
+\emph{consistent}. When that is the case, a solution can be read on the output
+wires for $z$. The $f$ output wire indicates whether the matrix $A$ has
+\emph{full-rank}. When $c=0$, the system has no solution ; when $c=1$ and $f=1$,
+the system has single solution (which the circuit returns) ; when $c=1$ and
+$f=0$, the system has several solutions. A circuit with this specification is
+not difficult to obtain by putting $A$ into row-reduced echelon form.
+
+The point is that on a CPU equipped with $w$-bit registers, $w$ copies of the
+circuit can be evaluated in parallel by performing normal Boolean operations
+between registers (the $i$-th copy operates on the $i$-th of all $w$-bit
+values). Most current \textsf{x86-64} CPUs have \textsf{AVX2} instructions,
+which allows to perform Boolean operations on 256-bit registers. High-end
+\textsf{x86-64} CPUs have \textsf{AVX512} instructions that operate on 512-bit
+registers.
+
+This allows to group the iterations of the main loop if the algorithm by batches
+of size $w$. The most common situation is that all linear systems are
+inconsistent (which results in $c = 0000 \dots 000$). In this case, there is
+nothing to do. Otherwise, the output of each element of the batch must be
+examined separately. If $c \wedge \neg f = 000 \dots 000$, then all consistent
+systems have a single solution, which is already computed. Otherwise, there is a
+consistent linear system with several solutions, which need to be
+recomputed. This is fairly rare, so the performance of this special case does
+not really matter.
 \bibliography{biblio}
 
 \end{document}
