@@ -434,7 +434,71 @@ $b$ vectors are random, is $\bigO{n^{2.5} 2^{n - \sqrt{2m}}}$.
 \section{Potential Extensions}
 \label{sec:extensions}
 
-% \TODO{Monika : Discuter ici qu'on peut aller vers crossbred complet}
+This section discusses
+
+\subsection{Faster Polynomial Enumeration Using a Gray Code}
+
+As discussed in section~\ref{sec:description}, the running time of the algorithm
+is dominated by the need to evaluate quadratic polynomials (step 7 of
+algorithm~\ref{the-algo}). Evaluating a quadratic polynomial on
+$\hat y \in \bits^u$ naively requires $\bigO{u^2}$ operations. This can be
+reduced by enumerating all values of $\hat y$ using a Gray code, so that only a
+single bit of $\hat y$ changes at each iteration. This technique seems to belong
+to the folklore. The point is that once the value of $q_i(\hat y)$ is known,
+only the monomials that depend on the flipped variable must be reevaluated, and
+there are only $u$.
+
+Consider an arbitrary quadratic polynomial
+\[
+  f(x) = c + \sum_{i=1}^u \sum_{j=1}^u M[i,j] x_i x_j.
+\]
+Observe that $f(x + y) = f(x) + f(y) + x \left(M + M^t\right)y^t + f(0)$. Let
+$\hat e_k \in \bits^u$ denote the vector which is zero everywhere except on the
+$k$-th coordinate.  Define the partial ``derivative'' of $f$ with respect to its
+$k$-th variable as:
+\[
+  \frac{\partial f}{\partial k}(y) = f(y) + f(y + \hat e_k).
+\]
+Using the above observation, one quickly find that:
+\[
+  \frac{\partial f}{\partial k}(y) = M[k,k] + \sum_{i=1}^u (M[i,k] + M[k, i]) y_i.
+\]
+
+This suggests the following rearrangement of algorithm~\ref{the-algo}:
+
+\begin{algorithmic}[1]
+  \State $\hat y \gets 0$ \Comment{Setup $\hat y$, $A$ and $b$}
+  \For{$1 \leq i \leq \ell$}
+  \State $b[i] \gets  h_i(0)$
+  \State $A[i, \cdot] \gets c_i$
+  \EndFor
+  \For{$1 \leq i \leq 2^u$} \Comment{Main loop}
+  \State Solve the linear system $Az^t = b$ and process its solution as before
+  \State $k \gets $ index of the rightmost bit of $i$ \Comment{Update $\hat y$}
+  \State $\hat y \gets \hat y + \hat e_k$
+  \For{$1 \leq i \leq \ell$} \Comment{Update $A$ and $b$}
+  \State $b[i] \gets b[i] + \frac{\partial q_i}{\partial k}(\hat y)$
+  \State $A[i, \cdot] \gets A[i, \cdot] + B_i[k, \cdot]$
+  \EndFor
+  \EndFor
+\end{algorithmic}
+
+Maintaining $A$ and $b$ consistent with the single-bit updates to $\hat y$ now
+requires $\bigO{u}$ operations on step 10 and $\bigO{v}$ operations on step
+11. All in-all, the total cost of assembling the linear system has dropped from
+$\bigO{n^{2.5}}$ to $\bigO{n^{1.5}}$, and it now matches that of solving it.
+
+Lastly, this could be again improved a little by observing that each individual
+``partial derivative'' is evaluated on related inputs (only two bits differ from
+one evaluation to the next). Taking advantage of this observation leads to the
+fast exhaustive search algorithm of Bouillaguet, Chen, Cheng, Chou, Niederhagen,
+Shamir and Yang~\cite{BouillaguetCCCNSY10}. Using this technique allows to
+update each $b[i]$ in constant time, and brings down the total time needed to
+update $A$ and $b$ to $\bigO{n}$.
+
+\subsection{Using Higher-Degree Multiples --- Towards the Joux-Vitse Algorithm}
+
+\TODO{Monika : Discuter ici qu'on peut aller vers crossbred complet}
 
 % \TODO{Discuter ici qu'on peut améliorer la production du système linéaire avec un code de Gray}
 
