@@ -51,7 +51,13 @@
 \maketitle
 
 \begin{abstract}
-  This paper neds an abstract...
+  We propose a simple deterministic algorithm for solving Boolean quadratic systems.
+  It can be seen as a particular case of already existing more sophisticated
+  algorithms. The main idea is to guess a certain number of variables until the system
+  can be solved by linearization. For a system of $m$ polynomials in $n$ variables, it has
+  a time complexity of roughly $2^{n-\sqrt{2m}}$. Although this is worst than more refined
+  algorithms such as \textsf{Crossbred}, the present method has the advantage of being
+  simpler to describe and easier to implement. It is also quite efficient in practice.
 \end{abstract}
 
 
@@ -338,7 +344,7 @@ solution is indeed a valid satisfying assignment.
 % We use hats to denote concrete values. By default, vectors are row vectors. The
 % transpose of a vector $x$ is the column vector $x^t$.
 
-\TODO{ceci contient l'amélioration car ça simplifie la description.}
+\TODO{ceci contient l'amélioration car ça simplifie la description. Monika: J'ai mis une proposition pour ce TODO, voir 2ème paragraphe. }
 
 \begin{algorithm}[t]
   \caption{\label{the-algo}}
@@ -377,6 +383,8 @@ $z_1, \dots, z_v$ and will make it possible to solve quadratic systems of $m$
 equations in $v$ variables by linearization. Indeed, there are $v(v+1)/2$ such
 monomials, and this evaluates to $m - 3v/2 - 2$ without rounding $v$ towards
 zero.
+
+The second step of our simple algorithm consists in solving the linearized system of equations. The most straightforward method is to perform a Gaussian elimination on the entire system. Since Gaussian elimination has a significant computational cost and our choice of $v$ ensures that system is overdetermined, it can be beneficial to consider only a subset of the system, find its solution and then, check whether the solution is consistent with the original system. Choosing the size and composition of this subset introduces a trade-off between the cost of the Gaussian elimination and the number of solutions to check. We present here a choice that both allows for a simple formal description, and is standard in the literature~\cite{--,JouxV17}. \TODO{rajouter citation d'autres algos qui utilisent cette méthode}
 
 Consider the linear space spanned by $f_1, \dots, f_m$, and let $\mathcal{V}$
 denote its subspace where all the coefficients of all quadratic monomials
