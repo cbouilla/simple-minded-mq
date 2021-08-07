@@ -206,16 +206,18 @@ all the previous ones, the algorithm does not require any assumption on the
 input polynomials, which is a theoretical breakthrough. The algorithm works by
 assembling considering high-degree polynomial that evaluates to 1 on partial
 solutions, then approximates it by lower-degree polynomials. The technique was
-later improved by Björklund, Kaski and Williams, reaching
+later improved by Björklund, Kaski and Williams~\cite{BjorklundK019}, reaching
 $\bigOsoft{2^{0.804n}}$, then again by Dinur~\cite{Dinur21}, reaching
-$\bigOsoft{2^{0.6943n}}$. Dinur proposed a ``concretely efficient'' lightweight
-version of his algorithm for the crypto community with complexity
-$\bigO{n^2 2^{0.815n}}$ using $n^2 2^{0.63n}$ bits of memory. Implementing these
-algorithms is likely to be difficult and more importantly completely useless
+$\bigOsoft{2^{0.6943n}}$.
 
-the
-exponential space requirements of these algorithm make it quite useless to
-produce an implementation.
+Dinur proposed a lightweight, ``concretely efficient'' version of his algorithm
+for the crypto community with complexity $\bigO{n^2 2^{0.815n}}$ using
+$n^2 2^{0.63n}$ bits of memory. This is concretely impractical: it requires more
+operation than exhaustive search as long as $n \leq 65$, and when it gets faster
+(for $n \geq 66$) it requires at least 1.5 petabyte of memory. All other
+incarnations of the ``polynomial
+method''~\cite{LokshtanovPTWY17,BjorklundK019,Dinur21} are even worse.  They are
+therefore mostly of theoretical interest.
 
 
 \section{A Toy Example}
