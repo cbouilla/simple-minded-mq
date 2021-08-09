@@ -524,6 +524,20 @@ update $A$ and $b$ to $\bigO{n}$.
 % sage: solve(mon == eqs, v)                                 
 % [v == -sqrt(6*m - 5), v == sqrt(6*m - 5), v == 0]
 
+[Charles] : En fait, en faisant ça, on se retrouve avec un système linéaire à
+résoudre de taille $v^3$. On peut éliminer d'avance les terms cubiques, donc il
+nous reste quelque chose de taille $v^2$, c'est plus gros qu'avant. En fait, la
+vraie technique de Joux-Vitse, c'est d'avoir un système linéaire de taille $v$
+seulement. Pour cela, il faut annuler les $\binom{v}{3}$ monômes cubiques en
+$z$, les $\binom{v}{2}$ monômes quadratiques en $z$, et aussi les
+$u*\binom{v}{2}$ monômes cubiques de la forme $y_i z_j z_k$. Enfin, il faut $v$
+equations en rab à la fin pour résoudre. Ceci donnerait donc:
+
+% sage: mon = v + binomial(v, 2) + binomial(v, 3) + (n-v) * binomial(v, 2)
+% sage: solve(mon == eqs, v)
+
+
+
 \section{Practicality}
 
 This algorithm can actually be implemented and executed. Toy implementations in
@@ -571,8 +585,8 @@ there is nothing to do. Otherwise, each element of the batch must be examined.
 Under heuristic randomness assumptions, each linear system is consistent with
 probability $2^{v-\ell}$. We now crudely lower-bound the probability that a
 random $\l \times v$ matrix is full rank. This happens when each column is
-chosen out of the linear span of the previous columns. This happens with
-probability:
+chosen out of the linear span of the previous columns, and the probability of
+this event is:
 \[
   p := \prod_{j=\ell-v+1}^\ell \left(1 - 2^{-j} \right)
 \]
@@ -581,7 +595,7 @@ This is always greater than $\left(1 - 2^{v-ell} \right)^v$. Let $e$ denote the
 then $e \geq 1$. This implies that $p \geq \left(1 - 2^{-ev} \right)^v$. Taking
 an asymptotic expansion for $v \rightarrow +\infty$ shows that this is
 $1 - v 2^{-ev} + \bigO{v^2 2^{-2ev}}$. Therefore, we expect the proportion of
-rank-defective linear systems to be of order $v 2^{v-\ell}$.
+rank-defective linear systems to be smaller than $v 2^{v-\ell}$.
 
 
 \subsection{Comparison with exhaustive search}
