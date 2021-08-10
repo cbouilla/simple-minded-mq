@@ -58,10 +58,11 @@
   (\textit{i.e.} by considering each remaining monomial as an independent
   variable and solving the resulting linear system). Under strong heuristic
   assumptions, this finds all the solutions of $m$ quadratic polynomials in $n$
-  variables with $\bigOsoft{2^{n-\sqrt{2m}}}$ operations. Although this
-  complexity is worst than the best known algorithm, the present technique has
-  the advantage of being simpler to describe and easy to implement. In strong
-  contrast with the state-of-the-art, it is also quite efficient in practice.
+  variables with $\bigOsoft{2^{n-\sqrt{2m}}}$ operations. Although this the best
+  known algorithm require exponentially less operations, the present technique
+  has the advantage of being simpler to describe and easy to implement. In
+  strong contrast with the state-of-the-art, it is also quite efficient in
+  practice.
 \end{abstract}
 
 
@@ -94,7 +95,8 @@ $128 \leq n \approx 256$ at this point: solving quadratic boolean systems of
 this size is assumed to be intractable. Note that in the context of cryptology,
 the average complexity is more relevant than the worst case, because
 cryptographic instances of the problem are (presumably indistinguishable from)
-random. The algorithmic problem is thus both of theoretical and of practical
+random. In addition, there is empirical evidence that random systems are hard to
+solve. The algorithmic problem is thus both of theoretical and of practical
 interest, and many algorithms have been proposed to solve it.
 
 In this paper, we present a \emph{decremental} improvement over the
@@ -179,21 +181,25 @@ available inside full-blown computer algebra systems, which are large and
 complex software projects.
 
 It is well-known that solving systems by Groebner basis computation is easier on
-overdetermined systems. This is the basis for the ``hybrid method'' which
-combines exhaustive search and algebraic techniques: guess the values of some
-variables, then compute a Groebner basis of the remaining system which has
-become overdetermined. Bettale, Faugère and Perret discuss the optimal number of
-variables to fix~\cite{BettaleFP09}. The \textsf{BooleanSolve} algorithm of
-Bardet, Faugère, Salvy and Spaenlehauer~\cite{BardetFSS13} is the best at this
-point, with running time $\bigOsoft{2^{0.792n}}$ on average, under algebraic
-assumptions. It guesses some variables, then checks if a polynomial combination
-of the remaining polynomial is equal to 1. When it is the case, then the guessed
-values are incorrect (by Hilbert's Nullstellensatz). This in turns is
-accomplished by deciding whether large sparse linear systems have a
+overdetermined systems. In the extreme, on sufficiently overdetermined
+polynomial systems, Groebner basis computations degenerate into simple linear
+algebra and works in polynomial time. This is the basis for the ``hybrid
+method'' which combines exhaustive search and algebraic techniques: guess the
+values of some variables, then compute a Groebner basis of the remaining system
+which has become overdetermined. Bettale, Faugère and Perret discuss the optimal
+number of variables to fix~\cite{BettaleFP09}. The \textsf{BooleanSolve}
+algorithm of Bardet, Faugère, Salvy and Spaenlehauer~\cite{BardetFSS13} is the
+best at this point, with running time $\bigOsoft{2^{0.792n}}$ on average, under
+algebraic assumptions. It guesses some variables, then checks if a polynomial
+combination of the remaining polynomial is equal to 1. When it is the case, then
+the guessed values are incorrect (by Hilbert's Nullstellensatz). This in turns
+is accomplished by deciding whether large sparse linear systems have a
 solution. Its inventors claim that it is slower than exhaustive search when
 $n \leq 200$, which seems to make it practically useless. While conceptually
 simple, the algorithm is likely difficult to implement because it requires a
-sparse linear system solver for large matrices (and it requires exponential space).
+sparse linear system solver for large matrices (and it requires exponential
+space). It must be noted that the algorithm which is the center of this paper is
+essentially a special case of the hybrid method.
 
 The \textsf{Crossbred} algorithm of Joux and Vitse~\cite{JouxV17} also belongs
 to this family ; its complexity is unknown, but its practical efficiency is
@@ -208,9 +214,9 @@ Paturi, Tamaki, Williams and Yu~\cite{LokshtanovPTWY17} presented a randomized
 algorithm of complexity $\bigOsoft{2^{0.8765n}}$. In strong contrast with almost
 all the previous ones, the algorithm does not require any assumption on the
 input polynomials, which is a theoretical breakthrough. The algorithm works by
-assembling considering high-degree polynomial that evaluates to 1 on partial
-solutions, then approximates it by lower-degree polynomials. The technique was
-later improved by Björklund, Kaski and Williams~\cite{BjorklundK019}, reaching
+assembling a high-degree polynomial that evaluates to 1 on partial solutions,
+then approximates it by lower-degree polynomials. The technique was later
+improved by Björklund, Kaski and Williams~\cite{BjorklundK019}, reaching
 $\bigOsoft{2^{0.804n}}$, then again by Dinur~\cite{Dinur21}, reaching
 $\bigOsoft{2^{0.6943n}}$.
 
@@ -220,8 +226,8 @@ $n^2 2^{0.63n}$ bits of memory. This is concretely impractical: it requires more
 operation than exhaustive search as long as $n \leq 65$, and when it gets faster
 (for $n \geq 66$) it requires at least 1.5 petabyte of memory. All other
 incarnations of the ``polynomial
-method''~\cite{LokshtanovPTWY17,BjorklundK019,Dinur21} are even worse.  They are
-therefore mostly of theoretical interest.
+method''~\cite{LokshtanovPTWY17,BjorklundK019,Dinur21} are even worse from a
+practical standpoint.  They are therefore mostly of theoretical interest.
 
 
 \section{A Toy Example}
