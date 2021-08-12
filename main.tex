@@ -518,26 +518,37 @@ update $A$ and $b$ to $\bigO{n}$.
 
 \subsection{Using Higher-Degree Multiples}
 
-\TODO{Monika : Discuter ici qu'on peut aller vers crossbred complet}
+The simple idea discussed earlier can be generalized in two different ways.
+One of them leads to the \textsf{CrossBred} algorithm~\cite{JouxV17}, the other
+one gives a simple algorithm which, as far as we know, has not been described
+in the literature yet.
 
-L'idée simple de départ peut se généraliser de DEUX façon différentes
+\paragraph{The \textsf{CrossBred} algorithm.}
+The general idea of \textsf{CrossBred} algorithm can be described as follow.
+Given a set of $m$ quadratic polynomials $f_i$ in $n$ variables over $\mathbb{F}_2$, 
+and $d \geq 2$, the first step consist in
+increasing the size of the initial system by multiplying each of the $f_i$
+polynomials by monomials of degree $d-2$ (i.e. construct the Macaulay matrix of
+degree $d$).
+Then, consider the linear space spanned 
+by $f_1, \dots, f_m, x_1f_1, \dots x_{n-(d-1)}\dots x_{n}f_m$. 
+We denote by $\mathcal{V}$ its subspace where all the coefficients of all 
+monomials of degree $d -2$ are equal to zero. Similar to what has been 
+describe in Section~\ref{sec:description}, a basis $g_1, \dots, g_\ell$ of
+$\mathcal{V}$ is easily computed via linear algebra. Once again, the set of variables
+is split in two subset of size $u$ and $v$ such that when the values $y_1, \dots, y_u$
+are fixed, the $g_i$ polynomials become linear and only depend on $z_1, \dots, z_v$.
+The algorithm enumerate all possible $y_1, \dots, y_u$, solve the system in the $z_i$
+variable and check whether the solution is consistent.
 
-1) Joux-Vitse [Claire !]
-
-\TODO{à adapter}
-Consider the linear space spanned by $f_1, \dots, f_m$, and let $\mathcal{V}$
-denote its subspace where all the coefficients of all quadratic monomials
-$z_i z_j$ are equal to zero. Computing a basis $g_1, \dots, g_\ell$ of
-$\mathcal{V}$ is easy (this can be done by putting the original polynomials in
-reduced row echelon form). The point is that once the values $y_1, \dots, y_u$
-are fixed, then the $g_i$ polynomials become linear and only depend on
-$z_1, \dots, z_v$.
+It is trivial to see that in the case $d=2$ this is the same as Algorithm~\ref{the-algo}.
+Let us see what happens in the case $d=3$. The first step consist in multiplying each of
+the $m$ initial polynomials by every variables $x_i$. This will lead to a total of
+$m(n+1)$ polynomials in the new system (i.e. $m$ polynomials of degree 2 and $nm$ polynomials
+of degree 3). 
 
 
-Let $\mathcal{V}_d$ denote the subspace of $\mathbb{F}_2[x]$ spanned by
-$m_i \cdot f_j$ where $m_i$ ranges across all monomials of degree $d-2$ and
-$1 \leq j \leq m$. Consider its intersection with the subspace where all
-monomials of total degree 2 or more in the $z_i$. Et bailable.
+
 
 
 % sage: # vrai JV                                                                                                             
