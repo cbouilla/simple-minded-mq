@@ -70,17 +70,17 @@
 
 \section{Introduction}
 
-We consider the problem of solving systems of multivariate quadratic boolean
-polynomial equations. Given a set of quadratic boolean polynomials
+We consider the problem of solving systems of multivariate quadratic Boolean
+polynomial equations. Given a set of quadratic Boolean polynomials
 $\{f_1, \dots, f_m\}$ in $\mathbb{F}_2[x_1, \dots, x_n]$, the problem consists
 in finding a satisfying assignment $\hat x \in \bits^n$ such that
 $f_i(\hat x) = 0$ for $1 \leq i \leq m$, or determining that none exist. Each
 polynomial is represented as the sum of quadratic terms $x_i x_j$, linear terms
-$x_i$ and a constant term. Because $x^2 = x$ modulo 2, we assume that all
-monomials are square-free.
+$x_i$ and a constant term. Because $x^2 = x$ modulo 2, we assume that the
+exponent of each variable is either 0 or 1.
 
 
-% A quadratic boolean
+% A quadratic Boolean
 % polynomial can be represented by a constant $c$ and an $n \times n$ matrix $A$
 % such that $f(x) = c + x A x^t$, which expands to
 % $c + \sum_{i=1}^n \sum_{j=1}^n A[i,j] x_i x_j$ ; $c$ is the constant term, 
@@ -94,11 +94,10 @@ have been submitted to the ongoing competition launched in 2017 by the
 (American) National Institute of Standards and Technology in order to select a
 portfolio of ``post-quantum'' public-key cryptographic algorithms. Among these,
 the \textsf{GeMSS} signature scheme exposes a public key consisting of $m=162$
-boolean quadratic polynomials in $n=192$ variables. It follows that the relevant
+Boolean quadratic polynomials in $n=192$ variables. It follows that the relevant
 range of parameters for cryptographic instances is essentially $m \approx n$ and
 $n \approx 200$ at this point:
-% GeMMS: 162--324
-solving quadratic boolean systems of this size is assumed to be intractable
+solving quadratic Boolean systems of this size is assumed to be intractable
 (much smaller systems seem practically out of reach as well). Note that in the
 context of cryptology, the average complexity is more relevant than the worst
 case, because cryptographic instances of the problem are (presumably
@@ -135,7 +134,7 @@ knowledge, this simple form was not discussed \textit{per se}.
 \subsection{Related Work}
 \label{sec:related}
 
-Exhaustive search is the baseline method to solve systems of boolean quadratic
+Exhaustive search is the baseline method to solve systems of Boolean quadratic
 polynomials, with a running time $\bigOsoft{2^n}$ and negligible space
 complexity. Using several algorithmic tricks and low-level optimizations, it can
 be implemented extremely efficiently: serious implementations check several
@@ -151,7 +150,7 @@ techniques~\cite{CourtoisGMT02}. This suggest that $m \approx n$ is the hardest
 case, and it is common in cryptology (we usually have $m=2n$ for encryption and
 $n = 2m$ or $n=3m$ for signatures). The overdetermined case is relevant to us, as
 it is the linearization technique: there are
-$\binom{n}{2} + \binom{n}{1} + \binom{n}{0} = 1 + n(n+1)/2$ boolean monomials in
+$\binom{n}{2} + \binom{n}{1} + \binom{n}{0} = 1 + n(n+1)/2$ Boolean monomials in
 $n$ variables ; consider each one as an independent fresh variable ; provided
 there are as many (linearly independent) quadratic equations, this yields a
 linear system with a small number of solutions. This system can be solved in
@@ -162,7 +161,7 @@ The next family of algorithms are algebraic manipulation techniques that derive,
 in a way or another, from the Buchberger algorithm for computing Groebner
 bases. Given a Groebner basis of the original polynomial equations, it is easy
 to read a potential solution. These algorithms are neither limited to quadratic
-polynomials nor to the boolean field. Their average case complexity is
+polynomials nor to the Boolean field. Their average case complexity is
 notoriously difficult to study, and it requires algebraic assumptions
 (regularity or semi-regularity) on the input polynomials~\cite{BardetFS15}.  The
 state of the art, at this point, seems to be the F4 and F5 algorithms by
