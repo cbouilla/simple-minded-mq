@@ -89,15 +89,23 @@ It is well-known that the problem is NP-complete, with a simple reduction from
 SAT. It is relevant to the cryptology community because its hardness can be used
 to build ``post-quantum'' encryption or signature schemes. Many have been
 proposed with concrete sets of parameters, such as HFE~\cite{Patarin96},
-UOV~\cite{KipnisPG99}, MQDSS~\cite{ChenHRSS16} and variants thereof.  The
-relevant range of parameters for cryptographic instances is roughly
-$128 \leq n \approx 256$ at this point: solving quadratic boolean systems of
-this size is assumed to be intractable. Note that in the context of cryptology,
-the average complexity is more relevant than the worst case, because
-cryptographic instances of the problem are (presumably indistinguishable from)
-random. In addition, there is empirical evidence that random systems are hard to
-solve. The algorithmic problem is thus both of theoretical and of practical
-interest, and many algorithms have been proposed to solve it.
+UOV~\cite{KipnisPG99}, MQDSS~\cite{ChenHRSS16} and variants thereof. Several
+have been submitted to the ongoing competition launched in 2017 by the
+(American) National Institute of Standards and Technology in order to select a
+portfolio of ``post-quantum'' public-key cryptographic algorithms. Among these,
+the \textsf{GeMSS} signature scheme exposes a public key consisting of $m=162$
+boolean quadratic polynomials in $n=192$ variables. It follows that the relevant
+range of parameters for cryptographic instances is essentially $m \approx n$ and
+$n \approx 200$ at this point:
+% GeMMS: 162--324
+solving quadratic boolean systems of this size is assumed to be intractable
+(much smaller systems seem practically out of reach as well). Note that in the
+context of cryptology, the average complexity is more relevant than the worst
+case, because cryptographic instances of the problem are (presumably
+indistinguishable from) random. In addition, there is empirical evidence that
+random systems are hard to solve. The algorithmic problem is thus both of
+theoretical and of practical interest, and many algorithms have been proposed to
+solve it.
 
 In this paper, we present a \emph{decremental} improvement over the
 state-of-the-art: a simple deterministic algorithm that achieves a
