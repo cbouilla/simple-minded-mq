@@ -135,12 +135,15 @@ knowledge, this simple form was not discussed \textit{per se}.
 Exhaustive search is the baseline method to solve systems of Boolean quadratic
 polynomial equations, with a running time $\bigOsoft{2^n}$ and negligible space
 complexity. Using several algorithmic tricks and low-level optimizations, it can
-be implemented extremely efficiently: serious implementations check several
-candidate solutions per CPU cycle~\cite{BouillaguetCCCNSY10}, which means that
-the factors hidden in the big Oh notation are extremely small. It follows that
-``beating brute force'' \emph{in practice}, namely assembling an implementation
-that runs faster on existing hardware than exhaustive search, for problem sizes
-that are feasible, is a significant achievement.
+be implemented extremely efficiently~\cite{BouillaguetCCCNSY10}. In particular,
+the implementation in the \textsf{libfes-lite}
+library\footnote{\url{https://gitlab.lip6.fr/almasty/libfes-lite}}, which is
+state-of-the-art to the best of our knowledge, checks several candidate
+solutions per CPU cycle~\cite{BouillaguetCCCNSY10}, which means that the factors
+hidden in the big Oh notation are extremely small. It follows that ``beating
+brute force'' \emph{in practice}, namely assembling an implementation that runs
+faster on existing hardware than exhaustive search, for problem sizes that are
+feasible, is a significant achievement.
 
 Systems that are very underdetermined ($n \geq m^2$) or very overdetermined
 ($m \geq 0.5 n^2$) can be solved in polynomial time by simple
@@ -544,10 +547,10 @@ update $A$ and $b$ to $\bigO{n}$.
 
 Implementing these algorithmic optimizations result in a program that spends the
 essential of its time examining a large number of very small overdetermined
-linear systems modulo 2 (say, $20 \times 10$). Optimizing the linear algebra is
-therefore the next step. The overwhelming majority will be full-rank and
-inconsistent. Therefore, it makes sense to deal with linear systems in two
-phases:
+linear systems modulo 2 (say, of size $20 \times 10$). Optimizing the linear
+algebra is therefore the next step. The overwhelming majority of the linear
+systems will have full rank and be inconsistent. Therefore, it makes sense to
+process them in two phases:
 \begin{enumerate}
 \item Check whether the linear system is both full-rank and inconsistent. If
   this is the case, move on to the next system. This is performance-critical.
@@ -561,7 +564,7 @@ phases:
 As argued in section~\ref{sec:description}, each linear system is consistent
 with probability less than $2^{-3v/2}$ (under heuristic randomness
 assumptions). We now crudely lower-bound the probability that a random
-$\l \times v$ matrix is full rank. This happens when each column is chosen out
+$\ell \times v$ matrix is full rank. This happens when each column is chosen out
 of the linear span of the previous columns, and the probability of this event
 is:
 \[
@@ -579,7 +582,7 @@ this holds quite well.
 \subsection{Vectorization}
 
 \emph{Vectorization} is a key implementation technique to obtain competitive
-performance: it leads to a speedup of about $40 \times$ on contemporary
+performance: it leads to a constant speedup of about $40 \times$ on contemporary
 hardware.
 
 Consider a Boolean circuit $\mathcal{C}$ with $(\ell+1)v$ input wires for $A$
@@ -616,16 +619,18 @@ negligible cost. The circuit we use has approximately $3\ell v^2$ gates.
 The wall-clock running time of fast software implementations of exhaustive
 search is $T = \alpha 2^n$, for some constant $\alpha$ which depends on the
 implementation and on the machine. The running time of this algorithm presented
-in this paper is $T' = \beta P(m) 2^{n - 2\sqrt{m}}$, for some polynomial $P$
-and some constant $\beta$ that also depends on the machine. An implementation of
-our algorithm ``beats brute force'' when $T/T' > 1$, in other terms when
-$\alpha 2^{\sqrt{2m}} > \beta P(m)$. This always happens for sufficiently large
+in this paper is $T' = P(m) 2^{n - 2\sqrt{m}}$, for some polynomial $P$ that
+also depends on the machine. An implementation of our algorithm ``beats brute
+force'' when $T/T' > 1$, in other terms when
+$\alpha 2^{\sqrt{2m}} > P(m)$. This always happens for sufficiently large
 $m$, \textit{i.e.} if there are sufficiently many equations, regardless of the
 number of variables.
 
-Determining the threshold $m$ such that both algorithms take the same time is a
-simple matter ; on the recent laptop of one of the authors, we found that it is
-$m=48$, which we consider to be rather low.
+We use the exhaustive search implementation in \textsf{libfes-lite} for
+comparison. Determining the threshold $m$ such that both programs take the same
+time is a simple matter ; using a single core on the recent laptop of one of the
+authors, we found that it is $m=48$, which we consider to be rather low. In that
+case, both program take about two hours to run.
 
 Solving a random system of 512 quadratic equations in 64 variables takes less
 than 15 minutes on a laptop using this algorithm (using a single core) ; it
@@ -647,9 +652,9 @@ one gives a simple algorithm which, as far as we know, has not been described
 in the literature yet.
 
 
-\subsection{The \textsf{CrossBred} algorithm}
+\subsection{The \textsf{Crossbred} algorithm}
 
-The general idea of \textsf{CrossBred} algorithm can be described as follow.
+The general idea of \textsf{Crossbred} algorithm can be described as follows.
 Given a set of $m$ quadratic polynomials $f_i$ in $n$ variables over $\mathbb{F}_2$, 
 and $D \geq 2$, the first step consist in
 increasing the size of the initial system by multiplying each of the $f_i$
@@ -658,13 +663,8 @@ polynomials by monomials of degree less than or equal to $D-2$
 Then, consider the linear space spanned 
 by these polynomials $f_1, \dots, f_m, x_1f_1, \dots x_{n-(D-1)}\dots x_{n}f_m$. 
 We denote by $\mathcal{V}$ its subspace where all the coefficients of all 
-<<<<<<< HEAD
 monomials of degree $D -2$ are equal to zero. Similar to what has been 
-describe in Section~\ref{sec:description}, a basis $g_1, \dots, g_\ell$ of
-=======
-monomials of degree $d -2$ are equal to zero. Similar to what has been 
-described in section~\ref{sec:description}, a basis $g_1, \dots, g_\ell$ of
->>>>>>> d1e03ea43f5ce984a662366a7e17dcc08c4096ff
+Describe in Section~\ref{sec:description}, a basis $g_1, \dots, g_\ell$ of
 $\mathcal{V}$ is easily computed via linear algebra. Once again, the set of variables
 is split in two subset of size $u$ and $v$ such that when the values $y_1, \dots, y_u$
 are fixed, the $g_i$ polynomials become linear and only depend on $z_1, \dots, z_v$.
@@ -712,11 +712,11 @@ practice.
 % ....:  1/2*n + 1/2
 
 
-\noindent
-\textbf{Simple linearization.} 
+\subsection{Simple linearization}
+
 First, we augment the initial polynomial system by adding multiples of the form $uf_i$ with a restriction to the overall degree. To restrict the degree to $D$, we need to consider only monomials $u$ of degree lesser than or equal to $D-2$, as all $f_i$ polynomials are of degree two. After we obtain the augmented system, we proceed as before: guess sufficiently many variables so that the remaining polynomial system can be solved by linearization. 
 
-The parameter $v$ is again chosen as the highest value where the number of monomials is lesser than or equal to the number of equations. The number of monomials is easily computed by: $\sum_{i=1}^{D}\binom{n}{i}$. However, estimating the number of equations is not as straightforward, as we need to take into account the number of multiples that will give trivially dependent linear equations. For instance, when we restrict the degree to three, we can create at most $mn$ multiples of degree three, which gives us a total of $m(n+1)$ equations in the system. However multiples of the form $y_jf_i$ are not useful, as once the values $y_1,\dots y_u$ are fixed, $y_jf_i$ is equal to either 0 of $f_i$. Thus, the number of equations in the augmented system, when $D=3$ is $m(v+1)$, and the system can be solved through linearization when $m(v+1) \geq v(v^2+5)/2$. We approximate the choice of $v$ to $\left\lfloor \sqrt{6m} \right\rfloor$. For the case $D=4$, similarly, we only consider multiples of the form $z_jz_kf_i$ to be useful, which allows us to create $v(v+1)/2$ new equations. However, there are also relations of the form $f_if_j + f_jf_i=0$ and $(f_i+1)f_i=0$ that result in trivially dependent equations. Thus, the total number of equations is $m(v(v+1)/2+1)-m(m+1)/2$ and we choose $v$ such that $m(v(v+1)/2+1)-m(m+1)/2 \geq (v^4-2v^3+11v^2+14v)/24$. \TODO{simplifier et/ou approximer}. For $D > 4$, the number of equations is difficult to estimate \TODO{as...}. Note that these values are upper-bounds. In practice, we can have monomials that get cancelled out and equations that are (not trivially) linearly dependent. However, we experimented with small parameters for the $D=3$ case and found that, on systems that are randomly created, with one planted solution, the obtained values do not differ enough from the upper-bound to change the estimate of $v$. 
+The parameter $v$ is again chosen as the highest value where the number of monomials is lesser than or equal to the number of equations. The number of monomials is easily computed by: $\sum_{i=1}^{D}\binom{n}{i}$. However, estimating the number of equations is not as straightforward, as we need to take into account the number of multiples that will give trivially dependent linear equations. For instance, when we restrict the degree to three, we can create at most $mn$ multiples of degree three, which gives us a total of $m(n+1)$ equations in the system. However multiples of the form $y_jf_i$ are not useful, as once the values $y_1,\dots y_u$ are fixed, $y_jf_i$ is equal to either 0 or $f_i$. Thus, the number of equations in the augmented system, when $D=3$ is $m(v+1)$, and the system can be solved through linearization when $m(v+1) \geq v(v^2+5)/2$. We approximate the choice of $v$ to $\left\lfloor \sqrt{6m} \right\rfloor$. For the case $D=4$, similarly, we only consider multiples of the form $z_jz_kf_i$ to be useful, which allows us to create $v(v+1)/2$ new equations. However, there are also relations of the form $f_if_j + f_jf_i=0$ and $(f_i+1)f_i=0$ that result in trivially dependent equations. Thus, the total number of equations is $m(v(v+1)/2+1)-m(m+1)/2$ and we choose $v$ such that $m(v(v+1)/2+1)-m(m+1)/2 \geq (v^4-2v^3+11v^2+14v)/24$. \TODO{simplifier et/ou approximer}. For $D > 4$, the number of equations is difficult to estimate \TODO{as...}. Note that these values are upper-bounds. In practice, we can have monomials that get cancelled out and equations that are (not trivially) linearly dependent. However, we experimented with small parameters for the $D=3$ case and found that, on systems that are randomly created, with one planted solution, the obtained values do not differ enough from the upper-bound to change the estimate of $v$. 
 
 
 This approach of considering higher-degree multiples yields higher values of $v$, which results in having to guess less variables before linearization. In contrast, the Gaussian elimination is done on a bigger linear system. 
