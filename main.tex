@@ -92,27 +92,24 @@ proposed with concrete sets of parameters, such as HFE~\cite{Patarin96},
 UOV~\cite{KipnisPG99}, MQDSS~\cite{ChenHRSS16} and variants thereof. Several
 have been submitted to the ongoing competition launched in 2017 by the
 (American) National Institute of Standards and Technology in order to select a
-portfolio of ``post-quantum'' public-key cryptographic algorithms. Among these,
-the \textsf{GeMSS} signature scheme exposes a public key consisting of $m=162$
-Boolean quadratic polynomials in $n=192$ variables. It follows that the relevant
-range of parameters for cryptographic instances is essentially $m \approx n$ and
-$n \approx 200$ at this point:
-solving quadratic Boolean systems of this size is assumed to be intractable
-(much smaller systems seem practically out of reach as well). Note that in the
-context of cryptology, the average complexity is more relevant than the worst
-case, because cryptographic instances of the problem are (presumably
-indistinguishable from) random. In addition, there is empirical evidence that
-random systems are hard to solve. The algorithmic problem is thus both of
-theoretical and of practical interest, and many algorithms have been proposed to
-solve it.
+portfolio of ``post-quantum'' public-key cryptographic algorithms. For instance,
+among these, the \textsf{GeMSS} signature scheme exposes a public key consisting
+of $m=162$ Boolean quadratic polynomials in $n=192$ variables. It follows that
+the relevant range of parameters for cryptographic instances is essentially
+$m \approx n$ and $n \approx 200$ at this point: solving quadratic Boolean
+systems of this size is assumed to be intractable (much smaller systems seem
+practically out of reach as well). Note that in the context of cryptology, the
+average case complexity is more relevant than the worst case, because
+cryptographic instances of the problem are (presumably indistinguishable from)
+random. In addition, there is empirical evidence that random systems are hard to
+solve. The algorithmic problem is thus both of theoretical and of practical
+interest, and many algorithms have been proposed to solve it.
 
 In this paper, we present a \emph{decremental} improvement over the
-state-of-the-art: a simple deterministic algorithm that achieves a
-sub-exponential advantage over exhaustive search in the average case, while
-being extremely simple and easy to implement. Its complexity is inferior to
-other existing algorithms, which are exponentially better, but its description
-is much simpler and its practical efficiency is much better. The algorithm works
-as follows:
+state-of-the-art: a simple deterministic algorithm, which is essentially a
+special of exponentially better techniques. It (only) achieves a sub-exponential
+advantage over exhaustive search in the average case, but it is extremely simple
+and quite easy to implement efficiently. The algorithm works as follows:
 
 \begin{framed}
   Guess sufficiently many variables so that the remaining polynomial system can
@@ -131,11 +128,12 @@ complex algorithms from the cryptology community, including but not limited
 to~\cite{CourtoisKPS00,BettaleFP09,JouxV17}. However, to the best of our
 knowledge, this simple form was not discussed \textit{per se}.
 
+
 \subsection{Related Work}
 \label{sec:related}
 
 Exhaustive search is the baseline method to solve systems of Boolean quadratic
-polynomials, with a running time $\bigOsoft{2^n}$ and negligible space
+polynomial equations, with a running time $\bigOsoft{2^n}$ and negligible space
 complexity. Using several algorithmic tricks and low-level optimizations, it can
 be implemented extremely efficiently: serious implementations check several
 candidate solutions per CPU cycle~\cite{BouillaguetCCCNSY10}, which means that
@@ -148,14 +146,14 @@ Systems that are very underdetermined ($n \geq m^2$) or very overdetermined
 ($m \geq 0.5 n^2$) can be solved in polynomial time by simple
 techniques~\cite{CourtoisGMT02}. This suggest that $m \approx n$ is the hardest
 case, and it is common in cryptology (we usually have $m=2n$ for encryption and
-$n = 2m$ or $n=3m$ for signatures). The overdetermined case is relevant to us, as
-it is the linearization technique: there are
-$\binom{n}{2} + \binom{n}{1} + \binom{n}{0} = 1 + n(n+1)/2$ Boolean monomials in
-$n$ variables ; consider each one as an independent fresh variable ; provided
-there are as many (linearly independent) quadratic equations, this yields a
-linear system with a small number of solutions. This system can be solved in
-polynomial time, and each solution reveals a possible value of the variable. On
-random input systems, the number of solutions is expected to be only one.
+$n = 2m$ or $n=3m$ for signatures). Very overdetermined systems can
+(heuristically) be solved by linearization: there are $n(n+1)/2$ non-constant
+Boolean monomials in $n$ variables ; consider each one as an independent fresh
+variable ; provided there are as many (linearly independent) quadratic
+equations, this yields a linear system with a (presumably) small number of
+solutions. This system can be solved in polynomial time, and each solution
+reveals a possible value of the variables. On random input systems, we expect to
+have a single solution.
 
 The next family of algorithms are algebraic manipulation techniques that derive,
 in a way or another, from the Buchberger algorithm for computing Groebner
@@ -163,25 +161,27 @@ bases. Given a Groebner basis of the original polynomial equations, it is easy
 to read a potential solution. These algorithms are neither limited to quadratic
 polynomials nor to the Boolean field. Their average case complexity is
 notoriously difficult to study, and it requires algebraic assumptions
-(regularity or semi-regularity) on the input polynomials~\cite{BardetFS15}.  The
-state of the art, at this point, seems to be the F4 and F5 algorithms by
-Faugère~\cite{F4,F5}. F4 is essentially a reformulation of the Buchberger
-algorithm that replaces polynomial manipulations by efficient sparse linear
-algebra and processes them in batch. F5 strives to eliminate some useless
-computation. In Bardet's thesis, it is shown that a simplified version of F5
-computes a Groebner basis of a regular sequence of polynomial in
-$\bigOsoft{2^{4.295n}}$ field operations, over any finite field. Efficient
-implementations of F4 are available in off-the-shelf computer algebra systems,
-notably \textsf{MAGMA}~\cite{MAGMA}. Faugere's algorithms have been successful
-in breaking some cryptosystems, most notably an instance of HFE with $n=80$
-variables, which turned to be spectacularly weak against Groebner basis
+(regularity or semi-regularity) on the input polynomials. The state of the art,
+at this point, seems to be the \textsf{F4} and \textsf{F5} algorithms by
+Faugère~\cite{F4,F5}. \textsf{F4} is essentially a reformulation of the
+Buchberger algorithm that does batch processing using efficient sparse linear
+algebra instead of polynomial manipulations. \textsf{F5} strives to eliminate
+some useless computations. Bardet, Faugère and Salvy~\cite{BardetFS15} show that
+a simplified version of \textsf{F5} computes a Groebner basis of a regular
+sequence of quadratic polynomials in $\bigOsoft{2^{4.295n}}$ field operations,
+over any finite field (therefore it ``beats brute force'' on fields with more
+than 20 elements). Efficient implementations of \textsf{F4} are available in
+off-the-shelf computer algebra systems, notably
+\textsf{MAGMA}~\cite{MAGMA}. Faugère's algorithms have been successful in
+breaking some cryptosystems, most notably an instance of \textsf{HFE} with
+$n=80$ variables, which turned to be spectacularly weak against Groebner basis
 computations~\cite{FaugereJ03}. Variants of these algorithms have been
-rediscovered by the crypto community under the name XL, notably by Courtois,
-Klimov, Patarin and Shamir~\cite{CourtoisKPS00}.
+rediscovered by the crypto community under the name \textsf{XL}, notably by
+Courtois, Klimov, Patarin and Shamir~\cite{CourtoisKPS00}.
 
 All these algorithms have exponential space complexity and existing
 implementation run into memory limitations even for a moderate number of
-variables. Implementing them is difficult, because they require either
+variables. Implementing them is non-trivial, because they require either
 sophisticated data-structure for large-degree multivariate polynomials and/or
 sparse linear algebra over large matrices. Existing implementations are usually
 available inside full-blown computer algebra systems, which are large and
@@ -189,49 +189,58 @@ complex software projects.
 
 It is well-known that solving systems by Groebner basis computation is easier on
 overdetermined systems. In the extreme, on sufficiently overdetermined
-polynomial systems, Groebner basis computations degenerate into simple linear
-algebra and works in polynomial time. This is the basis for the ``hybrid
+polynomial systems, Groebner basis computations degenerate into Gaussian
+elimination and work in polynomial time. This is the basis for the ``hybrid
 method'' which combines exhaustive search and algebraic techniques: guess the
 values of some variables, then compute a Groebner basis of the remaining system
 which has become overdetermined. Bettale, Faugère and Perret discuss the optimal
 number of variables to fix~\cite{BettaleFP09}. The \textsf{BooleanSolve}
 algorithm of Bardet, Faugère, Salvy and Spaenlehauer~\cite{BardetFSS13} is the
-best at this point, with running time $\bigOsoft{2^{0.792n}}$ on average, under
-algebraic assumptions. It guesses some variables, then checks if a polynomial
-combination of the remaining polynomial is equal to 1. When it is the case, then
-the guessed values are incorrect (by Hilbert's Nullstellensatz). This in turns
-is accomplished by deciding whether large sparse linear systems have a
-solution. Its inventors claim that it is slower than exhaustive search when
+best embodiment of this idea at this point, with running time
+$\bigOsoft{2^{0.792n}}$ on average, under algebraic assumptions. It guesses some
+variables, then checks if a polynomial combination of the remaining polynomials
+is equal to 1. When it is the case, then the guessed values are incorrect (by
+Hilbert's Nullstellensatz). This in turn is accomplished by deciding whether
+large sparse linear systems have a solution. The inventors of
+\textsf{BooleanSolve} claim that it is slower than exhaustive search when
 $n \leq 200$, which seems to make it practically useless. While conceptually
-simple, the algorithm is likely difficult to implement because it requires a
-sparse linear system solver for large matrices (and it requires exponential
-space). It must be noted that the algorithm which is the center of this paper is
-essentially a special case of the hybrid method.
+simple, the algorithm is likely hard to implement because it requires a sparse
+linear system solver for exponentially large matrices. To the best of our
+knowledge, no implementations has ever been written.
+% It must be noted that
+% the algorithm which is the center of this paper is essentially a special case of
+% the hybrid method.
+
 
 The \textsf{Crossbred} algorithm of Joux and Vitse~\cite{JouxV17} also belongs
-to this family ; its complexity is unknown, but its practical efficiency is
+to the ``guess variables then solve a linear system'' family of algorithms. Its
+asymptotic complexity is not precisely known, but its practical efficiency is
 spectacular: it has been used to solve a random system with $n = 74$ variables
-and $m=148$ equations (this would require about 150 million CPU hours using
-exhaustive search). There is a public implementation that uses GPUs by
-Niederhagen, Ning and Yang~\cite{NiederhagenNY18}. This algorithm is discussed
-more in-depth in section~\ref{sec:extensions}.
+and $m=148$ equations, which is the current record (this would require about 150
+million CPU hours using exhaustive search). There is a public implementation
+that uses GPUs by Niederhagen, Ning and Yang~\cite{NiederhagenNY18}. This
+algorithm is discussed more in-depth in section~\ref{sec:extensions}.
 
-A completely different family of algorithms emerged in 2017 when Lokshtanov,
-Paturi, Tamaki, Williams and Yu~\cite{LokshtanovPTWY17} presented a randomized
-algorithm of complexity $\bigOsoft{2^{0.8765n}}$. In strong contrast with almost
-all the previous ones, the algorithm does not require any assumption on the
-input polynomials, which is a theoretical breakthrough. The algorithm works by
-assembling a high-degree polynomial that evaluates to 1 on partial solutions,
-then approximates it by lower-degree polynomials. The technique was later
-improved by Björklund, Kaski and Williams~\cite{BjorklundK019}, reaching
-$\bigOsoft{2^{0.804n}}$, then again by Dinur~\cite{Dinur21}, reaching
-$\bigOsoft{2^{0.6943n}}$.
+A completely different family of algorithms, called the ``polynomial method'' by
+Dinur, emerged in 2017 when Lokshtanov, Paturi, Tamaki, Williams and
+Yu~\cite{LokshtanovPTWY17} presented a randomized algorithm of complexity
+$\bigOsoft{2^{0.8765n}}$. In strong contrast with almost all the previous ones,
+the algorithm does not require any assumption on the input polynomials, which is
+a theoretical breakthrough. The algorithm works by assembling a high-degree
+polynomial that evaluates to 1 on partial solutions, then approximates it by
+lower-degree polynomials. The technique was later improved by Björklund, Kaski
+and Williams~\cite{BjorklundK019}, reaching $\bigOsoft{2^{0.804n}}$, then again
+by Dinur~\cite{Dinur21}, reaching $\bigOsoft{2^{0.6943n}}$.
 
-Dinur proposed a lightweight, ``concretely efficient'' version of his algorithm
-for the crypto community with complexity $\bigO{n^2 2^{0.815n}}$ using
-$n^2 2^{0.63n}$ bits of memory. This is concretely impractical: it requires more
-operation than exhaustive search as long as $n \leq 65$, and when it gets faster
-(for $n \geq 66$) it requires at least 1.5 petabyte of memory. All other
+Noting that the self-reduction that results in this low asymptotic complexity
+only kicks in for very large values of $n$, Dinur proposed a simpler,
+lightweight and ``concretely efficient'' version of his algorithm for the crypto
+community with complexity $\bigO{n^2 2^{0.815n}}$ using $n^2 2^{0.63n}$ bits of
+memory. A closer look reveals that this is, in fact, concretely impractical: the
+algorithm requires more than $2^n$ operations as long as $n \leq 65$, and for
+$n \geq 66$ it requires at least 1.5 petabyte of memory (the most powerful
+computer in the world at the time of writing, \texttt{fugaku}, has about 5
+petabyte of memory spread over more than 150\ 000 computing nodes). All other
 incarnations of the ``polynomial
 method''~\cite{LokshtanovPTWY17,BjorklundK019,Dinur21} are even worse from a
 practical standpoint.  They are therefore mostly of theoretical interest.
