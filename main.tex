@@ -89,15 +89,23 @@ It is well-known that the problem is NP-complete, with a simple reduction from
 SAT. It is relevant to the cryptology community because its hardness can be used
 to build ``post-quantum'' encryption or signature schemes. Many have been
 proposed with concrete sets of parameters, such as HFE~\cite{Patarin96},
-UOV~\cite{KipnisPG99}, MQDSS~\cite{ChenHRSS16} and variants thereof.  The
-relevant range of parameters for cryptographic instances is roughly
-$128 \leq n \approx 256$ at this point: solving quadratic boolean systems of
-this size is assumed to be intractable. Note that in the context of cryptology,
-the average complexity is more relevant than the worst case, because
-cryptographic instances of the problem are (presumably indistinguishable from)
-random. In addition, there is empirical evidence that random systems are hard to
-solve. The algorithmic problem is thus both of theoretical and of practical
-interest, and many algorithms have been proposed to solve it.
+UOV~\cite{KipnisPG99}, MQDSS~\cite{ChenHRSS16} and variants thereof. Several
+have been submitted to the ongoing competition launched in 2017 by the
+(American) National Institute of Standards and Technology in order to select a
+portfolio of ``post-quantum'' public-key cryptographic algorithms. Among these,
+the \textsf{GeMSS} signature scheme exposes a public key consisting of $m=162$
+boolean quadratic polynomials in $n=192$ variables. It follows that the relevant
+range of parameters for cryptographic instances is essentially $m \approx n$ and
+$n \approx 200$ at this point:
+% GeMMS: 162--324
+solving quadratic boolean systems of this size is assumed to be intractable
+(much smaller systems seem practically out of reach as well). Note that in the
+context of cryptology, the average complexity is more relevant than the worst
+case, because cryptographic instances of the problem are (presumably
+indistinguishable from) random. In addition, there is empirical evidence that
+random systems are hard to solve. The algorithmic problem is thus both of
+theoretical and of practical interest, and many algorithms have been proposed to
+solve it.
 
 In this paper, we present a \emph{decremental} improvement over the
 state-of-the-art: a simple deterministic algorithm that achieves a
@@ -575,17 +583,19 @@ a computer algebra systems such as \textsf{SageMath} are easy to write. A
 user-friendly and competitive implementation in pure C using low-level
 optimizations is about 650 lines long (it is accessible in the supplementary
 material). This is possible because the algorithm itself is simple, and because
-it does not rely on sophisticated data-structures or sub-algorithms such as fast
-multivariate polynomial multiplication, fast multipoint
+it does not rely on sophisticated data structures or complex sub-algorithms such
+as fast multivariate polynomial multiplication, fast multipoint
 evaluation/interpolation, groebner basis computations or large sparse linear
-system solvers. In addition, its space complexity is (almost) negligible and it
-is trivially parallelizable.
+system solvers. In addition, its space complexity is negligible and it is
+trivially parallelizable.
 
 We discuss an interesting implementation aspect that leads to a speedup of about
 $40 \times$ on contemporary hardware, and makes the implementation
-competitive. The program spends much of its time solving billions of very small
-overdetermined linear systems modulo 2 (say, $20 \times 10$). The key to obtain
-good software performance is \emph{vectorization}.
+competitive. The program spends much of its time examining a large number of
+very small overdetermined linear systems modulo 2 (say, $20 \times 10$). The
+overwhelming majority will be full-rank and inconsistent, therefore detecting
+that one of these conditions is not met is almost sufficient. But the actual key
+to obtain good software performance is \emph{vectorization}.
 
 Consider a Boolean circuit $\mathcal{C}$ with $(\ell+1)v$ input wires for $A$
 and $b$ as well as $v$ output wires for $z$ and two extra output wires $c$ and
@@ -594,23 +604,26 @@ $d$. The $c$ output wire indicates whether the linear system $A z^t = b$ is
 \emph{rank-defective}. We use the following relaxed specification: if $d=1$ (the
 system does not have full-rank), then the other outputs are unspecified. If
 $d=0$ and $c=0$, then the system is inconsistent ; lastly, if $d=0$ and $c=1$
-then the only solution of the system can be read on the $z$ wires. A circuit
-with this specification is not difficult to obtain (this amounts to perform an
-LU factorization of $A$). Giving up on producing a meaningful result when the
-system is rank-defective allows several simplifications that reduce the size of
-the circuit. Rank-defective systems must then be treated separately, but they
-are supposed to be a rare occurrence.
+then the only solution of the system can be read on the $z$ wires.
 
 The point is that on a CPU equipped with $w$-bit registers, $w$ copies of the
-circuit can be evaluated in parallel by performing normal Boolean operations
-between registers (the $i$-th copy operates on the $i$-th of all $w$-bit
-values). Most current \textsf{x86-64} CPUs have \textsf{AVX2} instructions,
-which allows to perform Boolean operations on 256-bit registers.
+circuit can be evaluated in parallel on $w$ distinct inputs by performing normal
+Boolean operations between registers (the $i$-th copy operates on the $i$-th bit
+of all $w$-bit values). Most current \textsf{x86-64} CPUs have \textsf{AVX2}
+instructions, which allows to perform Boolean operations on 256-bit registers.
 
 This allows to group the iterations of the main loop of the algorithm in batches
 of size $w$. The most common situation is that all linear systems are full-rank
 and inconsistent (which results in $d \vee c = 0000 \dots 000$). In this case,
-there is nothing to do. Otherwise, each element of the batch must be examined.
+there is nothing to do except moving on to the next batch. Otherwise, the
+individual elements of the batch must be examined.  
+
+A circuit meeting this specification is not difficult to obtain (this amounts to
+perform an LU factorization of $A$ with partial pivoting). Giving up on
+producing a meaningful result when the system is rank-defective allows several
+simplifications that reduce the size of the circuit. Actually obtaining the
+solution $z$ when the system is consistent has negligible cost. Our circuit has
+approximately $3\ell v^2$ gates.
 
 Under heuristic randomness assumptions, each linear system is consistent with
 probability $2^{v-\ell}$. We now crudely lower-bound the probability that a
@@ -644,7 +657,8 @@ simple matter ; on the recent laptop of one of the authors, we found that it is
 $m=48$, which we consider to be rather low.
 
 Solving a random system of 512 quadratic equations in 64 variables takes less
-than 15 minutes on a laptop using this algorithm ; it would take 16 years using exhaustive search.
+than 15 minutes on a laptop using this algorithm ; it would take 16 years using
+exhaustive search.
 
 \bibliography{biblio}
 
