@@ -703,10 +703,10 @@ $m(n+1)$ polynomials in the new system (i.e. $m$ polynomials of degree 2 and $nm
 of degree 3). Then, we need to guess $u$ variables $y_1, \dots, y_u$ so that the remaining system
 is linear in $z$. This gives us nine different types of monomials:
 $y_i, z_k, y_iy_j, y_iz_k, z_jz_k, y_iy_jy_k, y_iy_jz_k, y_iz_jz_k$ and $z_iz_jz_k$.
-In order to have at least $v$ equations linear in the $z_i$ variables once the values of $y_1, \dots, y_u$
-are fixed, we have to eliminate terms of degree 2 and 3 in $z$ first. In other words,
-we need to eliminate the $z_jz_k, y_iz_jz_k, z_iz_jz_k$ monomials using at most $m(n+1) - v$ equations
-using linear algebra. The number of monomials that have to be eliminate is given by:
+In order to have at least $v$ linear equations in the $z_i$ variables once the values of $y_1, \dots, y_u$
+are fixed, we need to eliminate all the $z_jz_k, y_iz_jz_k, z_iz_jz_k$ monomials using at 
+most $m(n+1) - v$ equations. This is done using gaussian elimination. The number of monomials that 
+have to be eliminate is given by:
 \[
 \#\{z_iz_j\} + \#\{y_iz_iz_j\} +\#\{z_iz_jz_k\}
 = \binom{v}{2} + (n-v)\binom{v}{2} +\binom{v}{3}.
@@ -715,7 +715,7 @@ Thus, in order to estimate $v$, we need to solve:
 \[
 m(n+1) -v = (n-v +1)\binom{v}{2} + \binom{v}{3}.
 \]
-The solution to this equation is not easy to express in function of $n$ and $m$, but a quick
+The solution to this equation is not easy to write in function of $n$ and $m$, but a quick
 numerical simulation can easily check that for $m=n$, $v/\sqrt{2m} = 1+\epsilon$. Furthermore,
 the limit of $v/\sqrt{2m}$ equals 1 as $n$ grows toward the infinity. Although it does not seems
 to be much better than the case $D=2$, it can lead to significant improvements in
