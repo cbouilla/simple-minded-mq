@@ -516,35 +516,53 @@ Shamir and Yang~\cite{BouillaguetCCCNSY10}. Using this technique allows to
 update each $b[i]$ in constant time, and brings down the total time needed to
 update $A$ and $b$ to $\bigO{n}$.
 
-\subsection{Using Higher-Degree Multiples --- Towards the Joux-Vitse Algorithm}
+\subsection{Using Higher-Degree Multiples}
 
 \TODO{Monika : Discuter ici qu'on peut aller vers crossbred complet}
 
-% \TODO{Discuter ici qu'on peut améliorer la production du système linéaire avec un code de Gray}
+L'idée simple de départ peut se généraliser de DEUX façon différentes
 
-% sage: var('v', 'n', 'm')                                   
-% sage: eqs = m * (v + 1)                                    
-% sage: mon = v + binomial(v, 2) + binomial(v, 3)            
-% sage: solve(mon == eqs, v)
-% [v == -1/6*(6*m - 5)*(-I*sqrt(3) + 1)/(3*m + 1/3*sqrt(-72*m^3 + 261*m^2 - 150*m + 125/3))^(1/3) - 1/2*(3*m + 1/3*sqrt(-72*m^3 + 261*m^2 - 150*m + 125/3))^(1/3)*(I*sqrt(3) + 1), v == -1/6*(6*m - 5)*(I*sqrt(3) + 1)/(3*m + 1/3*sqrt(-72*m^3 + 261*m^2 - 150*m + 125/3))^(1/3) - 1/2*(3*m + 1/3*sqrt(-72*m^3 + 261*m^2 - 150*m + 125/3))^(1/3)*(-I*sqrt(3) + 1), v == 1/3*(6*m - 5)/(3*m + 1/3*sqrt(-72*m^3 + 261*m^2 - 150*m + 125/3))^(1/3) + (3*m + 1/3*sqrt(-72*m^3 + 261*m^2 - 150*m + 125/3))^(1/3)]
+1) Joux-Vitse [Claire !]
 
-% Affreux, on voudrait simplifier, pour cela on oublie simplement les équations de départ et on ne garde que les multiples
+\TODO{à adapter}
+Consider the linear space spanned by $f_1, \dots, f_m$, and let $\mathcal{V}$
+denote its subspace where all the coefficients of all quadratic monomials
+$z_i z_j$ are equal to zero. Computing a basis $g_1, \dots, g_\ell$ of
+$\mathcal{V}$ is easy (this can be done by putting the original polynomials in
+reduced row echelon form). The point is that once the values $y_1, \dots, y_u$
+are fixed, then the $g_i$ polynomials become linear and only depend on
+$z_1, \dots, z_v$.
 
-% sage: eqs = m * (v)                                        
-% sage: solve(mon == eqs, v)                                 
-% [v == -sqrt(6*m - 5), v == sqrt(6*m - 5), v == 0]
 
-[Charles] : En fait, en faisant ça, on se retrouve avec un système linéaire à
-résoudre de taille $v^3$. On peut éliminer d'avance les terms cubiques, donc il
-nous reste quelque chose de taille $v^2$, c'est plus gros qu'avant. En fait, la
-vraie technique de Joux-Vitse, c'est d'avoir un système linéaire de taille $v$
-seulement. Pour cela, il faut annuler les $\binom{v}{3}$ monômes cubiques en
-$z$, les $\binom{v}{2}$ monômes quadratiques en $z$, et aussi les
-$u*\binom{v}{2}$ monômes cubiques de la forme $y_i z_j z_k$. Enfin, il faut $v$
-equations en rab à la fin pour résoudre. Ceci donnerait donc:
+Let $\mathcal{V}_d$ denote the subspace of $\mathbb{F}_2[x]$ spanned by
+$m_i \cdot f_j$ where $m_i$ ranges across all monomials of degree $d-2$ and
+$1 \leq j \leq m$. Consider its intersection with the subspace where all
+monomials of total degree 2 or more in the $z_i$. Et bailable.
 
-% sage: mon = v + binomial(v, 2) + binomial(v, 3) + (n-v) * binomial(v, 2)
-% sage: solve(mon == eqs, v)
+
+% sage: # vrai JV                                                                                                             
+% sage: eqs = (n+1) * m                                                                                                         
+% sage: # vrai JV (en degré 3)                                                                                                  
+% sage: a_eliminer = binomial(v, 3) + binomial(v, 2) * (n-v+1)                                                                  
+% sage: solve(eqs == a_eliminer + v, v)                                                                                         
+% [v == -1/4*(1/3)^(2/3)*(3*(n + 1)^2 - 6*n + 10)*(-I*sqrt(3) + 1)/(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3) - 1/4*(1/3)^(1/3)*(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3)*(I*sqrt(3) + 1) + 1/2*n + 1/2, v == -1/4*(1/3)^(2/3)*(3*(n + 1)^2 - 6*n + 10)*(I*sqrt(3) + 1)/(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3) - 1/4*(1/3)^(1/3)*(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3)*(-I*sqrt(3) + 1) + 1/2*n + 1/2, v == 1/2*(1/3)^(2/3)*(3*(n + 1)^2 - 6*n + 10)/(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3) + 1/2*n + 1/2*(1/3)^(1/3)*(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3) + 1/2]
+% sage: x = -1/4*(1/3)^(2/3)*(3*(n + 1)^2 - 6*n + 10)*(-I*sqrt(3) + 1)/(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(
+% ....: -27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1
+% ....: 225/3))^(1/3) - 1/4*(1/3)^(1/3)*(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 
+% ....: 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3)*(I*sqrt(3) + 1) +
+% ....:  1/2*n + 1/2
+
+Dire en degré 3, limite $v$ tends vers $\sqrt{2m}$.
+
+2) linéarisation simple [NEW ! Monika !]
+Générer des multiples
+Éliminer tous les monômes de degré D
+On obtient un système de degré D-1, soluble par linéarisation
+
+Discussion aspect pratique pas mieux sauf si $m$ très grand.
+
+
+Dire en degré grand c'est chiant à cause du degré de régularité. Série de Hilbert et blablabla. Hypothèse de (semi-régularité) $\leadsto$ calcul des dimensions de l'espace des multiples en grand degré.
 
 
 
