@@ -466,10 +466,21 @@ asymptotically negligible compared to the rest of the algorithm.  The total
 expected running time of the algorithm, under the heuristic assumption that the
 $b$ vectors are random, is $\bigO{n^{2.5} 2^{n - \sqrt{2m}}}$.
 
-\section{Potential Extensions}
-\label{sec:extensions}
 
-This section discusses
+\section{Practicality}
+
+This algorithm can actually be implemented and executed. Toy implementations in
+a computer algebra systems such as \textsf{SageMath} are easy to write. A
+serious, user-friendly and competitive implementation in pure C using low-level
+optimizations is about 650 lines long (it is accessible in the supplementary
+material). This is possible because the algorithm itself is simple, and because
+it does not rely on sophisticated data structures or complex sub-algorithms such
+as fast multivariate polynomial multiplication, fast multipoint
+evaluation/interpolation, Groebner basis computations or large sparse linear
+system solvers. In addition, its space complexity is negligible and it is
+trivially parallelizable.
+
+This section discusses some aspects of such an implementation.
 
 \subsection{Faster Polynomial Enumeration Using a Gray Code}
 
@@ -529,7 +540,101 @@ Shamir and Yang~\cite{BouillaguetCCCNSY10}. Using this technique allows to
 update each $b[i]$ in constant time, and brings down the total time needed to
 update $A$ and $b$ to $\bigO{n}$.
 
-\subsection{Using Higher-Degree Multiples}
+\subsection{Simplifying the Linear Algebra}
+
+Implementing these algorithmic optimizations result in a program that spends the
+essential of its time examining a large number of very small overdetermined
+linear systems modulo 2 (say, $20 \times 10$). Optimizing the linear algebra is
+therefore the next step. The overwhelming majority will be full-rank and
+inconsistent. Therefore, it makes sense to deal with linear systems in two
+phases:
+\begin{enumerate}
+\item Check whether the linear system is both full-rank and inconsistent. If
+  this is the case, move on to the next system. This is performance-critical.
+\item Otherwise, we actually need to compute a particular solution, or even
+  possibly a basis of the solution space. This is a rare occurrence, so
+  performance is not critical.
+\end{enumerate}
+
+\medskip
+
+As argued in section~\ref{sec:description}, each linear system is consistent
+with probability less than $2^{-3v/2}$ (under heuristic randomness
+assumptions). We now crudely lower-bound the probability that a random
+$\l \times v$ matrix is full rank. This happens when each column is chosen out
+of the linear span of the previous columns, and the probability of this event
+is:
+\[
+  p := \prod_{j=\ell-v+1}^\ell \left(1 - 2^{-j} \right)
+\]
+This is always greater than $\left(1 - 2^{v-\ell} \right)^v$. Let $e$ denote the
+\emph{excess ratio} $e := \ell/v - 1$. Because we always have $\ell \geq 2v$,
+then $e \geq 1$. This implies that $p \geq \left(1 - 2^{-ev} \right)^v$. Taking
+an asymptotic expansion for $v \rightarrow +\infty$ shows that this is
+$1 - v 2^{-ev} + \bigO{v^2 2^{-2ev}}$. Therefore, we expect the proportion of
+rank-defective linear systems to be smaller than $v 2^{v-\ell}$. In practice,
+this holds quite well.
+
+
+\subsection{Vectorization}
+
+\emph{Vectorization} is a key implementation technique to obtain competitive
+performance: it leads to a speedup of about $40 \times$ on contemporary
+hardware.
+
+Consider a Boolean circuit $\mathcal{C}$ with $(\ell+1)v$ input wires for $A$
+and $b$ as well as $v$ output wires for $z$ and two extra output wires $c$ and
+$d$. The $c$ output wire indicates whether the linear system $A z^t = b$ is
+\emph{consistent} while the $d$ output wire indicates whether the matrix $A$ is
+\emph{rank-defective}. We use the following relaxed specification: if $d=1$ (the
+system does not have full-rank), then the other outputs are unspecified. If
+$d=0$ and $c=0$, then the system is inconsistent ; lastly, if $d=0$ and $c=1$
+then the only solution of the system can be read on the $z$ wires.
+
+The point is that on a CPU equipped with $w$-bit registers, $w$ copies of the
+circuit can be evaluated in parallel on $w$ distinct inputs by performing normal
+Boolean operations between registers (the $i$-th copy operates on the $i$-th bit
+of all $w$-bit values). Most current \textsf{x86-64} CPUs have \textsf{AVX2}
+instructions, which allows to perform Boolean operations on 256-bit registers.
+
+This allows to group the iterations of the main loop of the algorithm in batches
+of size $w$. The most common situation is that all linear systems are full-rank
+and inconsistent (which results in $d \vee c = 0000 \dots 000$). In this case,
+there is nothing to do except moving on to the next batch. Otherwise, the
+individual elements of the batch must be examined, but this is a rare occurrence.
+
+A circuit meeting the specification outlined above is not difficult to obtain,
+as this amounts to perform an LU factorization of $A$ with partial
+pivoting. Giving up on producing a meaningful result when the system is
+rank-defective allows several simplifications that reduce the size of the
+circuit. Actually obtaining the solution $z$ when the system is consistent has
+negligible cost. The circuit we use has approximately $3\ell v^2$ gates.
+
+
+\subsection{Comparison with exhaustive search}
+
+The wall-clock running time of fast software implementations of exhaustive
+search is $T = \alpha 2^n$, for some constant $\alpha$ which depends on the
+implementation and on the machine. The running time of this algorithm presented
+in this paper is $T' = \beta P(m) 2^{n - 2\sqrt{m}}$, for some polynomial $P$
+and some constant $\beta$ that also depends on the machine. An implementation of
+our algorithm ``beats brute force'' when $T/T' > 1$, in other terms when
+$\alpha 2^{\sqrt{2m}} > \beta P(m)$. This always happens for sufficiently large
+$m$, \textit{i.e.} if there are sufficiently many equations, regardless of the
+number of variables.
+
+Determining the threshold $m$ such that both algorithms take the same time is a
+simple matter ; on the recent laptop of one of the authors, we found that it is
+$m=48$, which we consider to be rather low.
+
+Solving a random system of 512 quadratic equations in 64 variables takes less
+than 15 minutes on a laptop using this algorithm (using a single core) ; it
+would take 16 years using exhaustive search.
+
+
+\section{Making it complicated with Higher-Degree Multiples}
+\label{sec:extensions}
+
 
 Our simple algorithm exploits the well-known property that a quadratic polynomial system can be solved in polynomial time by linearization when $m \geq n(n+1)/2$.
 By guessing variables, we decrease the value of $n$ until we obtain this ratio. A contrasting idea is to increase the value of $m$ by adding new polynomials of the form $uf_i$ where $u$ is a monomial in $\mathbb{F}_2[x_1, \dots, x_n]$.
@@ -614,89 +719,6 @@ Dire en degré grand c'est chiant à cause du degré de régularité. Série de 
 
 
 
-\section{Practicality}
-
-This algorithm can actually be implemented and executed. Toy implementations in
-a computer algebra systems such as \textsf{SageMath} are easy to write. A
-user-friendly and competitive implementation in pure C using low-level
-optimizations is about 650 lines long (it is accessible in the supplementary
-material). This is possible because the algorithm itself is simple, and because
-it does not rely on sophisticated data structures or complex sub-algorithms such
-as fast multivariate polynomial multiplication, fast multipoint
-evaluation/interpolation, groebner basis computations or large sparse linear
-system solvers. In addition, its space complexity is negligible and it is
-trivially parallelizable.
-
-We discuss an interesting implementation aspect that leads to a speedup of about
-$40 \times$ on contemporary hardware, and makes the implementation
-competitive. The program spends much of its time examining a large number of
-very small overdetermined linear systems modulo 2 (say, $20 \times 10$). The
-overwhelming majority will be full-rank and inconsistent, therefore detecting
-that one of these conditions is not met is almost sufficient. But the actual key
-to obtain good software performance is \emph{vectorization}.
-
-Consider a Boolean circuit $\mathcal{C}$ with $(\ell+1)v$ input wires for $A$
-and $b$ as well as $v$ output wires for $z$ and two extra output wires $c$ and
-$d$. The $c$ output wire indicates whether the linear system $A z^t = b$ is
-\emph{consistent} while the $d$ output wire indicates whether the matrix $A$ is
-\emph{rank-defective}. We use the following relaxed specification: if $d=1$ (the
-system does not have full-rank), then the other outputs are unspecified. If
-$d=0$ and $c=0$, then the system is inconsistent ; lastly, if $d=0$ and $c=1$
-then the only solution of the system can be read on the $z$ wires.
-
-The point is that on a CPU equipped with $w$-bit registers, $w$ copies of the
-circuit can be evaluated in parallel on $w$ distinct inputs by performing normal
-Boolean operations between registers (the $i$-th copy operates on the $i$-th bit
-of all $w$-bit values). Most current \textsf{x86-64} CPUs have \textsf{AVX2}
-instructions, which allows to perform Boolean operations on 256-bit registers.
-
-This allows to group the iterations of the main loop of the algorithm in batches
-of size $w$. The most common situation is that all linear systems are full-rank
-and inconsistent (which results in $d \vee c = 0000 \dots 000$). In this case,
-there is nothing to do except moving on to the next batch. Otherwise, the
-individual elements of the batch must be examined.  
-
-A circuit meeting this specification is not difficult to obtain (this amounts to
-perform an LU factorization of $A$ with partial pivoting). Giving up on
-producing a meaningful result when the system is rank-defective allows several
-simplifications that reduce the size of the circuit. Actually obtaining the
-solution $z$ when the system is consistent has negligible cost. Our circuit has
-approximately $3\ell v^2$ gates.
-
-Under heuristic randomness assumptions, each linear system is consistent with
-probability $2^{v-\ell}$. We now crudely lower-bound the probability that a
-random $\l \times v$ matrix is full rank. This happens when each column is
-chosen out of the linear span of the previous columns, and the probability of
-this event is:
-\[
-  p := \prod_{j=\ell-v+1}^\ell \left(1 - 2^{-j} \right)
-\]
-This is always greater than $\left(1 - 2^{v-ell} \right)^v$. Let $e$ denote the
-\emph{excess ratio} $e := \ell/v - 1$. Because we always have $\ell \geq 2v$,
-then $e \geq 1$. This implies that $p \geq \left(1 - 2^{-ev} \right)^v$. Taking
-an asymptotic expansion for $v \rightarrow +\infty$ shows that this is
-$1 - v 2^{-ev} + \bigO{v^2 2^{-2ev}}$. Therefore, we expect the proportion of
-rank-defective linear systems to be smaller than $v 2^{v-\ell}$.
-
-
-\subsection{Comparison with exhaustive search}
-
-The wall-clock running time of fast software implementations of exhaustive
-search is $T = \alpha 2^n$, for some constant $\alpha$ which depends on the
-implementation and on the machine. The running time of this algorithm presented
-in this paper is $T' = \beta P(m) 2^{n - 2\sqrt{m}}$, for some polynomial $P$
-and some constant $\beta$ that also depends on the machine. An implementation of
-our algorithm ``beats brute force'' when $T/T' > 1$, in other terms when
-$\alpha 2^{\sqrt{2m}} > \beta P(m)$. This always happens for sufficiently large
-$m$, \textit{i.e.} if there are sufficiently many equations.
-
-Determining the threshold $m$ such that both algorithms take the same time is a
-simple matter ; on the recent laptop of one of the authors, we found that it is
-$m=48$, which we consider to be rather low.
-
-Solving a random system of 512 quadratic equations in 64 variables takes less
-than 15 minutes on a laptop using this algorithm ; it would take 16 years using
-exhaustive search.
 
 \bibliography{biblio}
 
