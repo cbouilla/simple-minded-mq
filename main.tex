@@ -528,7 +528,7 @@ update $A$ and $b$ to $\bigO{n}$.
 
 Our simple algorithm explores the well-known property that a quadratic polynomial system can be solved in polynomial time by linearization when $m \geq n(n+1)/2$.
 By guessing variables from the system, we decrement the value of $n$ until we obtain this ratio. A contrasting idea is to increment the value of $m$ by adding new polynomials of the form $uf_i$ where $u$ is a monomial in $\mathbb{F}_2[x_1, \dots, x_n]$.
-Note that when we add these multiples, the degree of the system grows and as a result, the total number of monomials in the system (i.e. the number of columns in the Macauley matrix) grows as well. The lowest degree at which we achieve the required ratio to solve the system through linearization is called the \textit{degree of regularity}. This method is used in almost all state-of-the-art algorithms for solving multivariate polynomial systems~\cite{F4,F5,CourtoisKPS00,BardetFSS13,JouxV17}. 
+Note that when we add these multiples, the degree of the system grows and as a result, the total number of monomials in the system grows as well. The lowest degree at which we achieve the required ratio to solve the system through linearization is called the \textit{degree of regularity}. This method is used in almost all state-of-the-art algorithms for solving multivariate polynomial systems~\cite{F4,F5,CourtoisKPS00,BardetFSS13,JouxV17}. 
 
 In this section, we explore how the common method of using higher-degree multiples can be used to extend this algorithm following two different axes.
 
