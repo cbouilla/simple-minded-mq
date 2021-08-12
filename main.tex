@@ -665,16 +665,32 @@ would take 16 years using exhaustive search.
 \section{Making it complicated with Higher-Degree Multiples}
 \label{sec:extensions}
 
+This simple algorithm exploits the well-known idea that a polynomial system can
+be solved in polynomial time by linearization when the number of (linearly
+independent) equations exceeds the number of non-constant monomials that appear
+in them.
 
-Our simple algorithm exploits the well-known property that a quadratic polynomial system can be solved in polynomial time by linearization when $m \geq n(n+1)/2$.
-By guessing variables, we decrease the value of $n$ until we obtain this ratio. A contrasting idea is to increase the value of $m$ by adding new polynomials of the form $uf_i$ where $u$ is a monomial in $\mathcal{B}[x_1, \dots, x_n]$.
-Note that when we add these multiples, the degree of the system grows and as a result, the total number of monomials in the system grows as well. The lowest degree at which we achieve the required ratio to solve the system through linearization is called the \textit{degree of regularity}. This method is used in almost all state-of-the-art algorithms for solving multivariate polynomial systems~\cite{F4,F5,CourtoisKPS00,BardetFSS13,JouxV17}. 
+The number of non-constant monomials of degree $\leq D$ in $n$ variables is
+$N_d(n) = \sum_{i=1}^D \binom{n}{i}$. A degree-$D$ Boolean system can be
+linearized when $m \geq N_d(n)$. In general, if the system is not overdetermined
+enough, then this ``linearization condition'' is not met. By guessing variables,
+we decrease the value of $n$ until the linearization condition is satisfied. A
+contrasting idea is to increase the value of $m$ by adding new polynomials of
+the form $uf_i$ where $u$ is a monomial in $\mathbb{F}_2[x_1, \dots, x_n]$.
+Note that when we add these multiples, the degree of the system grows and as a
+result, the total number of monomials in the system grows as well. The lowest
+degree at which we achieve the required ratio to solve the system through
+linearization is called the \textit{degree of regularity}. This method is used
+in almost all state-of-the-art algorithms for solving multivariate polynomial
+systems~\cite{F4,F5,CourtoisKPS00,BardetFSS13,JouxV17}.
 
 In this section, we explore how the common method of using higher-degree multiples can be used to extend this algorithm following two different axes.
 %
 One of them leads to the \textsf{Crossbred} algorithm~\cite{JouxV17}, the other
 one gives a simple algorithm which, as far as we know, has not been described
 in the literature yet.
+
+%Let $\Omega_{n,d}$ denote the vector space containing all Boolean polynomials of degree at most $d$.
 
 
 \subsection{The \textsf{Crossbred} algorithm}\label{sec:JV}
