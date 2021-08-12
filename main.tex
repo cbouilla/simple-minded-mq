@@ -260,7 +260,7 @@ Consider the following system in 5 variables:
 
 
 These polynomials can be seen as vectors in the vector space spanned by all
-monomials. The system can thus be written as a matrix:
+quadratic monomials. The system can thus be written as a matrix:
 \[
   M = \begin{blockarray}{ccccccccccccccccc}
   ab & ac & ad & ae & bc & bd & be & cd & ce & de & a & b & c & d & e & 1 & \\
@@ -275,21 +275,23 @@ monomials. The system can thus be written as a matrix:
 \]
 
 Next, separate the first $u=3$ variables, and write the polynomials in
-$\mathbb{F}_2[a,b,c][d,e]$, \textit{i.e.} as polynomials in $d, e$ whose coefficients are themselves polynomials in $a, b, c$:
+$\mathbb{F}_2[a,b,c][d,e]$, \textit{i.e.} as polynomials in $d, e$ whose
+coefficients are themselves polynomials in $a, b, c$. This yields a matrix with
+coefficients in $\mathbb{F}_2[a,b,c]$:
 \begin{equation}
   \label{eq:example_matrix}
   M(a,b,c) = \begin{blockarray}{ccccc}
   de & d & e & 1 & \\
   \begin{block}{[c|c|c|c]c}
   0 & c+1 & a+b+1 & bc + a + 1 & f_1\\
-  1 & a+b+1 & a+c     & ac +bc + a+b & f_2\\
+  1 & a+b+1 & a+c  & ac +bc + a+b & f_2\\
   0 & a+c+1 & b & a+b+1          & f_3 \\
   0 & a+b+1 & b+1 & ab+b  & f_4 \\
   1 & b+c & a+c+1 & ab+bc+a+1 & f_5 \\
 \end{block}
 \end{blockarray}
 \end{equation}
-This yields a matrix with coefficients in $\mathbb{F}_2[a,b,c]$. More precisely,
+ More precisely,
 the columns corresponding to quadratic (resp. linear, constant) monomials in
 $d,e$ contain constant (resp. linear, quadratic) terms in $a,b,c$. % Any solution
 % to the initial polynomial system is also a solution of the following linear system:
@@ -332,8 +334,6 @@ quadratic terms in reduced row echelon form :
   \end{block}
 \end{blockarray}
 \]
-
-
 Any solution to the initial polynomial system is also a solution of the
 following equations, taken by extracting non-pivotal rows:
 \[
@@ -349,7 +349,7 @@ following equations, taken by extracting non-pivotal rows:
   \end{pmatrix}
   =
   \underbrace{\begin{pmatrix}
-  a + bc + 1 \\       
+  bc + a + 1 \\       
   a + b + 1 \\  
   ab + b  \\             
   ab + ac + b + 1 \\
@@ -415,16 +415,17 @@ zero.
 The second step of our simple algorithm consists in solving the linearized system of equations. The most straightforward method is to perform a Gaussian elimination on the entire system. Since Gaussian elimination has a significant computational cost and our choice of $v$ ensures that system is overdetermined, it can be beneficial to consider only a subset of the system, find its solution and then, check whether the solution is consistent with the original system. Choosing the size and composition of this subset introduces a trade-off between the cost of the Gaussian elimination and the number of solutions to check. We present here a choice that both allows for a simple formal description, and is standard in the literature~\cite{--,JouxV17}. \TODO{rajouter citation d'autres algos qui utilisent cette méthode}
 
 Consider the linear space spanned by $f_1, \dots, f_m$, and let $\mathcal{V}$
-denote its subspace where all the coefficients of all quadratic monomials
-$z_i z_j$ are equal to zero. Computing a basis $g_1, \dots, g_\ell$ of
-$\mathcal{V}$ is easy (this can be done by putting the original polynomials in
-reduced row echelon form). The point is that once the values $y_1, \dots, y_u$
-are fixed, then the $g_i$ polynomials become linear and only depend on
-$z_1, \dots, z_v$. The algorithm works by enumerating all possible $\hat y \in \bits^u$, solving
-$g_1(\hat y, z) = \dots = g_\ell(\hat y, z) = 0$, then checking each candidate
-solution $(\hat y, \hat z)$ against the original system. This is shown in algorithm~\ref{the-algo}.
+denote its subspace where the coefficients of all quadratic monomials $z_i z_j$
+are equal to zero. Computing a basis $g_1, \dots, g_\ell$ of $\mathcal{V}$ is
+easy (this can be done by putting the original polynomials in reduced row
+echelon form). The point is that once the values $y_1, \dots, y_u$ are fixed,
+then the $g_i$ polynomials become linear and only depend on $z_1, \dots,
+z_v$. The algorithm works by enumerating all possible $\hat y \in \bits^u$,
+solving $g_1(\hat y, z) = \dots = g_\ell(\hat y, z) = 0$, then checking each
+candidate solution $(\hat y, \hat z)$ against the original system. This is shown
+in algorithm~\ref{the-algo}.
 
-We write each $g_i$ as $g_i(y, z) = h_i(y) + y \cdot B_i z^t + c_i z^t$, where
+We write each $g_i$ as $g_i(y, z) = h_i(y) + y B_i z^t + c_i z^t$, where
 $h$ is a quadratic polynomial in $\mathbb{F}_2[y]$, $B_i$ is a $u \times v$
 matrix and $c_i$ is a length-$v$ vector (this decomposition always exist).
 
@@ -465,8 +466,6 @@ asymptotically negligible compared to the rest of the algorithm.  The total
 expected running time of the algorithm, under the heuristic assumption that the
 $b$ vectors are random, is $\bigO{n^{2.5} 2^{n - \sqrt{2m}}}$.
 
-\TODO{semi-regularité permet de se débarasser de l'hypothèse ?}
-
 \section{Potential Extensions}
 \label{sec:extensions}
 
@@ -484,10 +483,8 @@ to the folklore. The point is that once the value of $q_i(\hat y)$ is known,
 only the monomials that depend on the flipped variable must be reevaluated, and
 there are only $u$.
 
-Consider an arbitrary quadratic polynomial
-\[
-  f(x) = c + \sum_{i=1}^u \sum_{j=1}^u M[i,j] x_i x_j.
-\]
+Consider an arbitrary quadratic polynomial $\displaystyle f(x) = c + \sum_{i=1}^u \sum_{j=1}^u M[i,j] y_i y_j$.
+
 Observe that $f(x + y) = f(x) + f(y) + x \left(M + M^t\right)y^t + f(0)$. Let
 $\hat e_k \in \bits^u$ denote the vector which is zero everywhere except on the
 $k$-th coordinate.  Define the partial ``derivative'' of $f$ with respect to its
@@ -534,18 +531,19 @@ update $A$ and $b$ to $\bigO{n}$.
 
 \subsection{Using Higher-Degree Multiples}
 
-Our simple algorithm explores the well-known property that a quadratic polynomial system can be solved in polynomial time by linearization when $m \geq n(n+1)/2$.
-By guessing variables from the system, we decrement the value of $n$ until we obtain this ratio. A contrasting idea is to increment the value of $m$ by adding new polynomials of the form $uf_i$ where $u$ is a monomial in $\mathbb{F}_2[x_1, \dots, x_n]$.
+Our simple algorithm exploits the well-known property that a quadratic polynomial system can be solved in polynomial time by linearization when $m \geq n(n+1)/2$.
+By guessing variables, we decrease the value of $n$ until we obtain this ratio. A contrasting idea is to increase the value of $m$ by adding new polynomials of the form $uf_i$ where $u$ is a monomial in $\mathbb{F}_2[x_1, \dots, x_n]$.
 Note that when we add these multiples, the degree of the system grows and as a result, the total number of monomials in the system grows as well. The lowest degree at which we achieve the required ratio to solve the system through linearization is called the \textit{degree of regularity}. This method is used in almost all state-of-the-art algorithms for solving multivariate polynomial systems~\cite{F4,F5,CourtoisKPS00,BardetFSS13,JouxV17}. 
 
 In this section, we explore how the common method of using higher-degree multiples can be used to extend this algorithm following two different axes.
 %
-One of them leads to the \textsf{CrossBred} algorithm~\cite{JouxV17}, the other
+One of them leads to the \textsf{Crossbred} algorithm~\cite{JouxV17}, the other
 one gives a simple algorithm which, as far as we know, has not been described
 in the literature yet.
 
-\noindent
-\textbf{The \textsf{CrossBred} algorithm.}
+
+\subsection{The \textsf{CrossBred} algorithm}
+
 The general idea of \textsf{CrossBred} algorithm can be described as follow.
 Given a set of $m$ quadratic polynomials $f_i$ in $n$ variables over $\mathbb{F}_2$, 
 and $d \geq 2$, the first step consist in
@@ -556,7 +554,7 @@ Then, consider the linear space spanned
 by these polynomials $f_1, \dots, f_m, x_1f_1, \dots x_{n-(d-1)}\dots x_{n}f_m$. 
 We denote by $\mathcal{V}$ its subspace where all the coefficients of all 
 monomials of degree $d -2$ are equal to zero. Similar to what has been 
-describe in Section~\ref{sec:description}, a basis $g_1, \dots, g_\ell$ of
+described in section~\ref{sec:description}, a basis $g_1, \dots, g_\ell$ of
 $\mathcal{V}$ is easily computed via linear algebra. Once again, the set of variables
 is split in two subset of size $u$ and $v$ such that when the values $y_1, \dots, y_u$
 are fixed, the $g_i$ polynomials become linear and only depend on $z_1, \dots, z_v$.
