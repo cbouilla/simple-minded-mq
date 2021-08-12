@@ -72,12 +72,12 @@
 
 We consider the problem of solving systems of multivariate quadratic Boolean
 polynomial equations. Given a set of quadratic Boolean polynomials
-$\{f_1, \dots, f_m\}$ in $\mathbb{F}_2[x_1, \dots, x_n]$, the problem consists
-in finding a satisfying assignment $\hat x \in \bits^n$ such that
-$f_i(\hat x) = 0$ for $1 \leq i \leq m$, or determining that none exist. Each
-polynomial is represented as the sum of quadratic terms $x_i x_j$, linear terms
-$x_i$ and a constant term. Because $x^2 = x$ modulo 2, we assume that the
-exponent of each variable is either 0 or 1.
+$\{f_1, \dots, f_m\}$, the problem consists in finding a satisfying assignment
+$\hat x \in \bits^n$ such that $f_i(\hat x) = 0$ for $1 \leq i \leq m$, or
+determining that none exist. Each polynomial is represented as the sum of
+quadratic terms $x_i x_j$, linear terms $x_i$ and a constant term. Because
+$x^2 = x$ modulo 2, we assume that the exponent of each variable is either 0 or
+1.
 
 
 % A quadratic Boolean
@@ -119,9 +119,10 @@ and quite easy to implement efficiently. The algorithm works as follows:
 \end{framed}
 
 More precisely, guess the values of all variables except the
-$\left\lfloor \sqrt{2m} - 2 \right\rfloor$ last ones. There remain strictly
-less than $m$ (non-constant) monomials of degree less than two in the remaining
-variables, which enables the use of the linearization technique.
+$\left\lfloor \sqrt{2m} - 2 \right\rfloor$ last ones. There remain strictly less
+than $m$ (non-constant) monomials of degree less than two in the remaining
+variables, which enables the use of the linearization technique. This results in
+a complexity of $\bigOsoft{2^{n - \sqrt{2m}}}$.
 
 This algorithm is a particularly simple special case of several other more
 complex algorithms from the cryptology community, including but not limited
@@ -239,7 +240,7 @@ Noting that the self-reduction that results in this low asymptotic complexity
 only kicks in for very large values of $n$, Dinur proposed a simpler,
 lightweight and ``concretely efficient'' version of his algorithm for the crypto
 community with complexity $\bigO{n^2 2^{0.815n}}$ using $n^2 2^{0.63n}$ bits of
-memory. A closer look reveals that this is, in fact, concretely impractical: the
+memory~\cite{Dinur21ec}. A closer look reveals that this is, in fact, concretely impractical: the
 algorithm requires more than $2^n$ operations as long as $n \leq 65$, and for
 $n \geq 66$ it requires at least 1.5 petabyte of memory (the most powerful
 computer in the world at the time of writing, \texttt{fugaku}, has about 5
@@ -372,24 +373,18 @@ solution is indeed a valid satisfying assignment.
 \section{Formal Description and Heuristic Analysis}
 \label{sec:description}
 
-% We use hats to denote concrete values. By default, vectors are row vectors. The
-% transpose of a vector $x$ is the column vector $x^t$.
-
-\TODO{ceci contient l'amélioration car ça simplifie la description. Monika: J'ai mis une proposition pour ce TODO, voir 2ème paragraphe. }
-
 \begin{algorithm}[t]
   \caption{\label{the-algo}}
 \begin{algorithmic}[1]
   \State Let $A$ denote a $\ell \times v$ matrix of bits and $b$ a size-$\ell$
   vector of bits
   \State Compute a basis $g_1, \dots, g_\ell$ of $\mathcal{V}$
-  \State Write
-  $g_i(y, z) = h_i(y) + y\cdot B_i \cdot z^t + c_i \cdot z^t + D_i$
+  \State Write $g_i(y, z) = q_i(y) + y\cdot B_i \cdot z^t + C_i \cdot z^t$
   \For{$\hat y \in \bits^u$}
 
   \For{$1 \leq i \leq \ell$}
-  \State $b[i] \gets  h_i(\hat y)$
-  \State $A[i, \cdot] \gets \hat y \cdot B_i + c_i$
+  \State $b[i] \gets  q_i(\hat y)$
+  \State $A[i, \cdot] \gets \hat y \cdot B_i + C_i$
   \EndFor
 
   \State Solve the linear system $Az^t = b$
@@ -404,6 +399,12 @@ solution is indeed a valid satisfying assignment.
 \end{algorithmic}
 \end{algorithm}
 
+The ring of Boolean polynomials in $n$ variables $x_1, \dots, x_n$, hereafter
+denoted by $\mathcal{B}[x_1, \dots, x_n]$, is the quotient of the polynomial
+ring $\mathbb{F}_2[x_1, \dots, x_n]$ by the ideal spanned by the ``field
+equations'' $\left\langle x_1^2 + x_1, \dots, x_n^2 + x_n\right\rangle$.  As
+before, we consider a system of $m$ quadratic polynomial equations
+$\{f_1, \dots, f_m\}$ in $\mathcal{B}[x_1, \dots, x_n]$.
 
 Suppose that the $n$ variables $x = (x_1, \dots, x_n)$ are arbitrarily
 partitioned in two sets with $x = (y, z)$, $y = (y_1, \dots, y_{u})$,
@@ -415,46 +416,70 @@ equations in $v$ variables by linearization. Indeed, there are $v(v+1)/2$ such
 monomials, and this evaluates to $m - 3v/2 - 2$ without rounding $v$ towards
 zero.
 
-The second step of our simple algorithm consists in solving the linearized system of equations. The most straightforward method is to perform a Gaussian elimination on the entire system. Since Gaussian elimination has a significant computational cost and our choice of $v$ ensures that system is overdetermined, it can be beneficial to consider only a subset of the system, find its solution and then, check whether the solution is consistent with the original system. Choosing the size and composition of this subset introduces a trade-off between the cost of the Gaussian elimination and the number of solutions to check. We present here a choice that both allows for a simple formal description, and is standard in the literature~\cite{--,JouxV17}. \TODO{rajouter citation d'autres algos qui utilisent cette méthode}
+We stated in the introduction that the algorithm consists in guessing the first
+$u$ variables, and solve the remaining system by linearization. In fact, we
+present below a slight algorithmic refinement which, in our opinion, leads to a
+simpler formal exposition.
 
-Consider the linear space spanned by $f_1, \dots, f_m$, and let $\mathcal{V}$
-denote its subspace where the coefficients of all quadratic monomials $z_i z_j$
-are equal to zero. Computing a basis $g_1, \dots, g_\ell$ of $\mathcal{V}$ is
-easy (this can be done by putting the original polynomials in reduced row
-echelon form). The point is that once the values $y_1, \dots, y_u$ are fixed,
-then the $g_i$ polynomials become linear and only depend on $z_1, \dots,
-z_v$. The algorithm works by enumerating all possible $\hat y \in \bits^u$,
-solving $g_1(\hat y, z) = \dots = g_\ell(\hat y, z) = 0$, then checking each
-candidate solution $(\hat y, \hat z)$ against the original system. This is shown
-in algorithm~\ref{the-algo}.
+% The second step of our simple algorithm consists in solving the linearized
+% system of equations. The most straightforward method is to perform a Gaussian
+% elimination on the entire system. Since Gaussian elimination has a significant
+% computational cost and our choice of $v$ ensures that system is overdetermined,
+% it can be beneficial to consider only a subset of the system, find its solution
+% and then, check whether the solution is consistent with the original
+% system. Choosing the size and composition of this subset introduces a trade-off
+% between the cost of the Gaussian elimination and the number of solutions to
+% check. We present here a choice that both allows for a simple formal
+% description, and is standard in the literature~\cite{--,JouxV17}. \TODO{rajouter
+%   citation d'autres algos qui utilisent cette méthode}
 
-We write each $g_i$ as $g_i(y, z) = h_i(y) + y B_i z^t + c_i z^t$, where
-$h$ is a quadratic polynomial in $\mathbb{F}_2[y]$, $B_i$ is a $u \times v$
-matrix and $c_i$ is a length-$v$ vector (this decomposition always exist).
+The ring of Boolean polynomial is in particular a vector space. Denote by
+$\mathcal{U}$ the subspace where the coefficient of all monomials of the form
+$z_i z_j$ is equal to zero. Consider the subspace spanned by the input
+polynomials $\left\langle f_1, \dots, f_m\right\rangle$ and let $\mathcal{V}$
+denote its intersection with $\mathcal{U}$. In other terms, $\mathcal{V}$
+contains the linear combinations of the input polynomials where the quadratic
+monomials in $z$ have vanished. The point is that once the values of the
+$y_1, \dots, y_u$ variables are fixed, then polynomials in $\mathcal{V}$ depend
+only on $z_1, \dots, z_v$ and they have degree one because their quadratic
+monomials are absent.
+
+Computing a basis $g_1, \dots, g_\ell$ of $\mathcal{V}$ is easy: this can be
+done by putting the original polynomials in reduced row echelon form with a
+suitable choice of pivots. The algorithm works by enumerating all possible
+$\hat y \in \bits^u$, solving $g_1(\hat y, z) = \dots = g_\ell(\hat y, z) = 0$,
+which is a linear system in $z$, then checking each candidate solution
+$(\hat y, \hat z)$ against the original system. This is shown in
+Algorithm~\ref{the-algo}.
+
+We write each $g_i$ as $g_i(y, z) = q_i(y) + y B_i z^t + C_i z^t$, where $q_i$
+is a quadratic polynomial in $\mathcal{B}[y]$, $B_i$ is a $u \times v$ matrix
+with coefficients in $\mathbb{F}_2$ and $C_i$ is a length-$v$ vector with
+coefficients in $\mathbb{F}_2$. This amounts to distinguish monomials that
+depend only on $y$, are bilinear in $(y, z)$ or linear in $z$, respectively.
 
 Assuming that the input polynomials are linearly independent (which seems a mild
 assumption), then the subspace $\mathcal{V}$ has dimension
 $\ell = m - v(v-1)/2$. Our choice of $v$ guarantees that $\ell \geq 5v/2$.
 
 Assembling the linear system (steps 5--7) requires evaluating the $\ell$
-quadratic polynomials $h_i$'s in $u$ variables and performing $\ell$
+quadratic polynomials $q_i$'s in $u$ variables and performing $\ell$
 matrix-vector products with the $B_i$'s which are of size $u \times v$.  This
 requires $\bigO{\ell u(u+v)}$ operations, while solving the linear system using
 Gaussian elimination requires $\bigO{\ell v^2}$ operations.
 
 Let us assume that $m = \bigTheta{n}$, so that $v = \bigO{\sqrt{n}}$ and
 $\ell = \bigO{\sqrt{n}}$. Assembling the linear system costs $\bigO{n^{2.5}}$
-while solving it costs $\bigO{n^{1.5}}$. The cost of assembling the linear
-system is dominated by the evaluation of the quadratic polynomials. It is
-possible to decrease this cost to $\bigO{n}$, as described in
-section~\ref{sec:extensions}.
+while solving it costs $\bigO{n^{1.5}}$. Assembling the linear system is
+dominated by the evaluation of the quadratic polynomials. We show in
+section~\ref{sec:gray} that it is possible to decrease this cost to $\bigO{n}$.
 
 The main problem of this algorithm is that it is difficult to bound the total
 number of iterations of the solution-checking loop (step 9--11). Morally
 speaking, because the linear system $A z^t = b$ is quite overdetermined, then most
 of the time there should be no solution at all.
 
-Let us make the heuristic assumption that the vectors $b$ are uniformly random
+Let us make the heuristic assumption that the $b$ vectors are uniformly random
 (in fact, they are the result of the evaluation of quadratic polynomials). The
 image of $A$ is a subspace of dimension less than or equal to $v$ in
 $\bits^\ell$, therefore it contains the random vector $b$ with probability less
@@ -483,15 +508,16 @@ evaluation/interpolation, Groebner basis computations or large sparse linear
 system solvers. In addition, its space complexity is negligible and it is
 trivially parallelizable.
 
-This section discusses some aspects of such an implementation.
+This section discusses what is needed to assemble a serious implementation.
 
 \subsection{Faster Polynomial Enumeration Using a Gray Code}
+\label{sec:gray}
 
 As discussed in section~\ref{sec:description}, the running time of the algorithm
-is dominated by the need to evaluate quadratic polynomials (step 7 of
+is dominated by the need to evaluate quadratic polynomials (step 6 of
 algorithm~\ref{the-algo}). Evaluating a quadratic polynomial on
 $\hat y \in \bits^u$ naively requires $\bigO{u^2}$ operations. This can be
-reduced by enumerating all values of $\hat y$ using a Gray code, so that only a
+reduced by enumerating all values of $\hat y$ using a \emph{Gray code}, so that only a
 single bit of $\hat y$ changes at each iteration. This technique seems to belong
 to the folklore. The point is that once the value of $q_i(\hat y)$ is known,
 only the monomials that depend on the flipped variable must be reevaluated, and
@@ -516,8 +542,8 @@ This suggests the following rearrangement of algorithm~\ref{the-algo}:
 \begin{algorithmic}[1]
   \State $\hat y \gets 0$ \Comment{Setup $\hat y$, $A$ and $b$}
   \For{$1 \leq i \leq \ell$}
-  \State $b[i] \gets  h_i(0)$
-  \State $A[i, \cdot] \gets c_i$
+  \State $b[i] \gets  q_i(0)$
+  \State $A[i, \cdot] \gets C_i$
   \EndFor
   \For{$1 \leq i \leq 2^u$} \Comment{Main loop}
   \State Solve the linear system $Az^t = b$ and process its solution as before
@@ -532,25 +558,25 @@ This suggests the following rearrangement of algorithm~\ref{the-algo}:
 
 Maintaining $A$ and $b$ consistent with the single-bit updates to $\hat y$ now
 requires $\bigO{u}$ operations on step 10 and $\bigO{v}$ operations on step
-11. All in-all, the total cost of assembling the linear system has dropped from
+11, respectively. All in-all, the total cost of assembling the linear system has dropped from
 $\bigO{n^{2.5}}$ to $\bigO{n^{1.5}}$, and it now matches that of solving it.
 
-Lastly, this could be again improved a little by observing that each individual
-``partial derivative'' is evaluated on related inputs (only two bits differ from
-one evaluation to the next). Taking advantage of this observation leads to the
-fast exhaustive search algorithm of Bouillaguet, Chen, Cheng, Chou, Niederhagen,
+This can again be improved a little by observing that each individual ``partial
+derivative'' is evaluated on related inputs (only two bits differ from one
+evaluation to the next). Taking advantage of this observation leads to the fast
+exhaustive search algorithm of Bouillaguet, Chen, Cheng, Chou, Niederhagen,
 Shamir and Yang~\cite{BouillaguetCCCNSY10}. Using this technique allows to
 update each $b[i]$ in constant time, and brings down the total time needed to
 update $A$ and $b$ to $\bigO{n}$.
 
 \subsection{Simplifying the Linear Algebra}
 
-Implementing these algorithmic optimizations result in a program that spends the
-essential of its time examining a large number of very small overdetermined
-linear systems modulo 2 (say, of size $20 \times 10$). Optimizing the linear
-algebra is therefore the next step. The overwhelming majority of the linear
-systems will have full rank and be inconsistent. Therefore, it makes sense to
-process them in two phases:
+Implementing these algorithmic optimizations result in a program that spends all
+its time examining a large number of very small overdetermined linear systems
+modulo 2 (say, of size $20 \times 10$). Optimizing the linear algebra is
+therefore the next step. The overwhelming majority of the linear systems will
+have full rank and be inconsistent. Therefore, it makes sense to process them in
+two phases:
 \begin{enumerate}
 \item Check whether the linear system is both full-rank and inconsistent. If
   this is the case, move on to the next system. This is performance-critical.
@@ -559,11 +585,11 @@ process them in two phases:
   performance is not critical.
 \end{enumerate}
 
-\medskip
-
-As argued in section~\ref{sec:description}, each linear system is consistent
-with probability less than $2^{-3v/2}$ (under heuristic randomness
-assumptions). We now crudely lower-bound the probability that a random
+%\medskip
+We now argue that the second phase is (heuristically) rarely invoked.  As argued
+in section~\ref{sec:description}, each linear system $Az^t = b$ is consistent
+with probability less than $2^{-3v/2}$ (under the heuristic assumption that $b$
+is random). We now crudely lower-bound the probability that a random
 $\ell \times v$ matrix is full rank. This happens when each column is chosen out
 of the linear span of the previous columns, and the probability of this event
 is:
@@ -578,21 +604,17 @@ $1 - v 2^{-ev} + \bigO{v^2 2^{-2ev}}$. Therefore, we expect the proportion of
 rank-defective linear systems to be smaller than $v 2^{v-\ell}$. In practice,
 this holds quite well.
 
-
 \subsection{Vectorization}
 
 \emph{Vectorization} is a key implementation technique to obtain competitive
-performance: it leads to a constant speedup of about $40 \times$ on contemporary
-hardware.
+performance on contemporary hardware, leading to a constant speedup of about
+$40 \times$.
 
 Consider a Boolean circuit $\mathcal{C}$ with $(\ell+1)v$ input wires for $A$
 and $b$ as well as $v$ output wires for $z$ and two extra output wires $c$ and
 $d$. The $c$ output wire indicates whether the linear system $A z^t = b$ is
 \emph{consistent} while the $d$ output wire indicates whether the matrix $A$ is
-\emph{rank-defective}. We use the following relaxed specification: if $d=1$ (the
-system does not have full-rank), then the other outputs are unspecified. If
-$d=0$ and $c=0$, then the system is inconsistent ; lastly, if $d=0$ and $c=1$
-then the only solution of the system can be read on the $z$ wires.
+\emph{rank-defective}.
 
 The point is that on a CPU equipped with $w$-bit registers, $w$ copies of the
 circuit can be evaluated in parallel on $w$ distinct inputs by performing normal
@@ -606,13 +628,16 @@ and inconsistent (which results in $d \vee c = 0000 \dots 000$). In this case,
 there is nothing to do except moving on to the next batch. Otherwise, the
 individual elements of the batch must be examined, but this is a rare occurrence.
 
-A circuit meeting the specification outlined above is not difficult to obtain,
-as this amounts to perform an LU factorization of $A$ with partial
-pivoting. Giving up on producing a meaningful result when the system is
-rank-defective allows several simplifications that reduce the size of the
-circuit. Actually obtaining the solution $z$ when the system is consistent has
-negligible cost. The circuit we use has approximately $3\ell v^2$ gates.
-
+Such a Boolean circuit is not difficult to obtain, as this amounts to perform an
+LU factorization of $A$ with partial pivoting.  We actually use the following
+relaxed specification: if $d=1$ (the system does not have full-rank), then the
+other outputs are unspecified. If $d=0$ and $c=0$, then the system is
+inconsistent ; lastly, if $d=0$ and $c=1$ then the only solution of the system
+can be read on the $z$ wires. Giving up on producing a meaningful result when
+the system is rank-defective allows several simplifications that reduce the size
+of the circuit. Actually obtaining the solution $z$ when the system is
+consistent has negligible cost. The circuit we use has approximately $3\ell v^2$
+gates.
 
 \subsection{Comparison with exhaustive search}
 
