@@ -48,718 +48,718 @@
 \nolinenumbers
 
 \begin{document}
-  \maketitle
-  
-  \begin{abstract}
-    This article discusses a simple deterministic algorithm for solving quadratic
-    Boolean systems which is essentially a special case of more sophisticated
-    methods. The main idea fits in a single sentence: guess enough of variables so
-    that the remaining quadratic equations can be solved by linearization
-    (\textit{i.e.} by considering each remaining monomial as an independent
-    variable and solving the resulting linear system). Under strong heuristic
-    assumptions, this finds all the solutions of $m$ quadratic polynomials in $n$
-    variables with $\bigOsoft{2^{n-\sqrt{2m}}}$ operations. Although this the best
-    known algorithm require exponentially less operations, the present technique
-    has the advantage of being simpler to describe and easy to implement. In
-    strong contrast with the state-of-the-art, it is also quite efficient in
-    practice.
-  \end{abstract}
-  
-  
-  \clearpage
-  
-  \section{Introduction}
-  
-  We consider the problem of solving systems of multivariate quadratic Boolean
-  polynomial equations. Given a set of quadratic Boolean polynomials
-  $\{f_1, \dots, f_m\}$, the problem consists in finding a satisfying assignment
-  $\hat x \in \bits^n$ such that $f_i(\hat x) = 0$ for $1 \leq i \leq m$, or
-  determining that none exist. Each polynomial is represented as the sum of
-  quadratic terms $x_i x_j$, linear terms $x_i$ and a constant term. Because
-  $x^2 = x$ modulo 2, we assume that the exponent of each variable is either 0 or
-  1.
-  
-  
-  % A quadratic Boolean
-  % polynomial can be represented by a constant $c$ and an $n \times n$ matrix $A$
-  % such that $f(x) = c + x A x^t$, which expands to
-  % $c + \sum_{i=1}^n \sum_{j=1}^n A[i,j] x_i x_j$ ; $c$ is the constant term, 
-  
-  It is well-known that the problem is NP-complete, with a simple reduction from
-  SAT. It is relevant to the cryptology community because its hardness can be used
-  to build ``post-quantum'' encryption or signature schemes. Many have been
-  proposed with concrete sets of parameters, such as HFE~\cite{Patarin96},
-  UOV~\cite{KipnisPG99}, MQDSS~\cite{ChenHRSS16} and variants thereof. Several
-  have been submitted to the ongoing competition launched in 2017 by the
-  (American) National Institute of Standards and Technology in order to select a
-  portfolio of ``post-quantum'' public-key cryptographic algorithms. For instance,
-  among these, the \textsf{GeMSS} signature scheme exposes a public key consisting
-  of $m=162$ Boolean quadratic polynomials in $n=192$ variables. It follows that
-  the relevant range of parameters for cryptographic instances is essentially
-  $m \approx n$ and $n \approx 200$ at this point: solving quadratic Boolean
-  systems of this size is assumed to be intractable (much smaller systems seem
-  practically out of reach as well). Note that in the context of cryptology, the
-  average case complexity is more relevant than the worst case, because
-  cryptographic instances of the problem are (presumably indistinguishable from)
-  random. In addition, there is empirical evidence that random systems are hard to
-  solve. The algorithmic problem is thus both of theoretical and of practical
-  interest, and many algorithms have been proposed to solve it.
-  
-  In this paper, we present a \emph{decremental} improvement over the
-  state-of-the-art: a simple deterministic algorithm, which is essentially a
-  special of exponentially better techniques. It (only) achieves a sub-exponential
-  advantage over exhaustive search in the average case, but it is extremely simple
-  and quite easy to implement efficiently. The algorithm works as follows:
-  
-  \begin{framed}
-    Guess sufficiently many variables so that the remaining polynomial system can
-    be solved by \emph{linearization} (\textit{i.e.} by considering each remaining
-    monomial as an independent variable, solving the resulting linear system and
-    checking each solution against the original polynomial system).
-  \end{framed}
-  
-  More precisely, guess the values of all variables except the
-  $\left\lfloor \sqrt{2m} - 2 \right\rfloor$ last ones. There remain strictly less
-  than $m$ (non-constant) monomials of degree less than two in the remaining
-  variables, which enables the use of the linearization technique. This results in
-  a complexity of $\bigOsoft{2^{n - \sqrt{2m}}}$.
-  
-  This algorithm is a particularly simple special case of several other more
-  complex algorithms from the cryptology community, including but not limited
-  to~\cite{CourtoisKPS00,BettaleFP09,JouxV17}. However, to the best of our
-  knowledge, this simple form was not discussed \textit{per se}.
-  
-  
-  \subsection{Related Work}
-  \label{sec:related}
-  
-  Exhaustive search is the baseline method to solve systems of Boolean quadratic
-  polynomial equations, with a running time $\bigOsoft{2^n}$ and negligible space
-  complexity. Using several algorithmic tricks and low-level optimizations, it can
-  be implemented extremely efficiently~\cite{BouillaguetCCCNSY10}. In particular,
-  the implementation in the \textsf{libfes-lite}
-  library\footnote{\url{https://gitlab.lip6.fr/almasty/libfes-lite}}, which is
-  state-of-the-art to the best of our knowledge, checks several candidate
-  solutions per CPU cycle~\cite{BouillaguetCCCNSY10}, which means that the factors
-  hidden in the big Oh notation are extremely small. It follows that ``beating
-  brute force'' \emph{in practice}, namely assembling an implementation that runs
-  faster on existing hardware than exhaustive search, for problem sizes that are
-  feasible, is a significant achievement.
-  
-  Systems that are very underdetermined ($n \geq m^2$) or very overdetermined
-  ($m \geq 0.5 n^2$) can be solved in polynomial time by simple
-  techniques~\cite{CourtoisGMT02}. This suggest that $m \approx n$ is the hardest
-  case, and it is common in cryptology (we usually have $m=2n$ for encryption and
-  $n = 2m$ or $n=3m$ for signatures). Very overdetermined systems can
-  (heuristically) be solved by linearization: there are $n(n+1)/2$ non-constant
-  Boolean monomials in $n$ variables ; consider each one as an independent fresh
-  variable ; provided there are as many (linearly independent) quadratic
-  equations, this yields a linear system with a (presumably) small number of
-  solutions. This system can be solved in polynomial time, and each solution
-  reveals a possible value of the variables. On random input systems, we expect to
-  have a single solution.
-  
-  The next family of algorithms are algebraic manipulation techniques that derive,
-  in a way or another, from the Buchberger algorithm for computing Groebner
-  bases. Given a Groebner basis of the original polynomial equations, it is easy
-  to read a potential solution. These algorithms are neither limited to quadratic
-  polynomials nor to the Boolean field. Their average case complexity is
-  notoriously difficult to study, and it requires algebraic assumptions
-  (regularity or semi-regularity) on the input polynomials. The state of the art,
-  at this point, seems to be the \textsf{F4} and \textsf{F5} algorithms by
-  Faugère~\cite{F4,F5}. \textsf{F4} is essentially a reformulation of the
-  Buchberger algorithm that does batch processing using efficient sparse linear
-  algebra instead of polynomial manipulations. \textsf{F5} strives to eliminate
-  some useless computations. Bardet, Faugère and Salvy~\cite{BardetFS15} show that
-  a simplified version of \textsf{F5} computes a Groebner basis of a regular
-  sequence of quadratic polynomials in $\bigOsoft{2^{4.295n}}$ field operations,
-  over any finite field (therefore it ``beats brute force'' on fields with more
-  than 20 elements). Efficient implementations of \textsf{F4} are available in
-  off-the-shelf computer algebra systems, notably
-  \textsf{MAGMA}~\cite{MAGMA}. Faugère's algorithms have been successful in
-  breaking some cryptosystems, most notably an instance of \textsf{HFE} with
-  $n=80$ variables, which turned to be spectacularly weak against Groebner basis
-  computations~\cite{FaugereJ03}. Variants of these algorithms have been
-  rediscovered by the crypto community under the name \textsf{XL}, notably by
-  Courtois, Klimov, Patarin and Shamir~\cite{CourtoisKPS00}.
-  
-  All these algorithms have exponential space complexity and existing
-  implementation run into memory limitations even for a moderate number of
-  variables. Implementing them is non-trivial, because they require either
-  sophisticated data-structure for large-degree multivariate polynomials and/or
-  sparse linear algebra over large matrices. Existing implementations are usually
-  available inside full-blown computer algebra systems, which are large and
-  complex software projects.
-  
-  It is well-known that solving systems by Groebner basis computation is easier on
-  overdetermined systems. In the extreme, on sufficiently overdetermined
-  polynomial systems, Groebner basis computations degenerate into Gaussian
-  elimination and work in polynomial time. This is the basis for the ``hybrid
-  method'' which combines exhaustive search and algebraic techniques: guess the
-  values of some variables, then compute a Groebner basis of the remaining system
-  which has become overdetermined. Bettale, Faugère and Perret discuss the optimal
-  number of variables to fix~\cite{BettaleFP09}. The \textsf{BooleanSolve}
-  algorithm of Bardet, Faugère, Salvy and Spaenlehauer~\cite{BardetFSS13} is the
-  best embodiment of this idea at this point, with running time
-  $\bigOsoft{2^{0.792n}}$ on average, under algebraic assumptions. It guesses some
-  variables, then checks if a polynomial combination of the remaining polynomials
-  is equal to 1. When it is the case, then the guessed values are incorrect (by
-  Hilbert's Nullstellensatz). This in turn is accomplished by deciding whether
-  large sparse linear systems have a solution. The inventors of
-  \textsf{BooleanSolve} claim that it is slower than exhaustive search when
-  $n \leq 200$, which seems to make it practically useless. While conceptually
-  simple, the algorithm is likely hard to implement because it requires a sparse
-  linear system solver for exponentially large matrices. To the best of our
-  knowledge, no implementations has ever been written.
-  % It must be noted that
-  % the algorithm which is the center of this paper is essentially a special case of
-  % the hybrid method.
-  
-  
-  The \textsf{Crossbred} algorithm of Joux and Vitse~\cite{JouxV17} also belongs
-  to the ``guess variables then solve a linear system'' family of algorithms. Its
-  asymptotic complexity is not precisely known, but its practical efficiency is
-  spectacular: it has been used to solve a random system with $n = 74$ variables
-  and $m=148$ equations, which is the current record (this would require about 150
-  million CPU hours using exhaustive search). There is a public implementation
-  that uses GPUs by Niederhagen, Ning and Yang~\cite{NiederhagenNY18}. This
-  algorithm is discussed more in-depth in section~\ref{sec:extensions}.
-  
-  A completely different family of algorithms, called the ``polynomial method'' by
-  Dinur, emerged in 2017 when Lokshtanov, Paturi, Tamaki, Williams and
-  Yu~\cite{LokshtanovPTWY17} presented a randomized algorithm of complexity
-  $\bigOsoft{2^{0.8765n}}$. In strong contrast with almost all the previous ones,
-  the algorithm does not require any assumption on the input polynomials, which is
-  a theoretical breakthrough. The algorithm works by assembling a high-degree
-  polynomial that evaluates to 1 on partial solutions, then approximates it by
-  lower-degree polynomials. The technique was later improved by Björklund, Kaski
-  and Williams~\cite{BjorklundK019}, reaching $\bigOsoft{2^{0.804n}}$, then again
-  by Dinur~\cite{Dinur21}, reaching $\bigOsoft{2^{0.6943n}}$.
-  
-  Noting that the self-reduction that results in this low asymptotic complexity
-  only kicks in for very large values of $n$, Dinur proposed a simpler,
-  lightweight and ``concretely efficient'' version of his algorithm for the crypto
-  community with complexity $\bigO{n^2 2^{0.815n}}$ using $n^2 2^{0.63n}$ bits of
-  memory~\cite{Dinur21ec}. A closer look reveals that this is, in fact, concretely impractical: the
-  algorithm requires more than $2^n$ operations as long as $n \leq 65$, and for
-  $n \geq 66$ it requires at least 1.5 petabyte of memory (the most powerful
-  computer in the world at the time of writing, \texttt{fugaku}, has about 5
-  petabyte of memory spread over more than 150\ 000 computing nodes). All other
-  incarnations of the ``polynomial
-  method''~\cite{LokshtanovPTWY17,BjorklundK019,Dinur21} are even worse from a
-  practical standpoint.  They are therefore mostly of theoretical interest.
-  
-  
-  \section{A Toy Example}
-  
-  Consider the following system in 5 variables:
-  \begin{align*}
-  f_1 &= ae + bc + be + cd + a + d + e + 1,\\
-  f_2 &= ac + ad + ae + bc + bd + ce + de + a + b + d,\\
-  f_3 &= ad + be + cd  + a + b + d + 1,\\
-  f_4 &= ab + ad + bd + be + b + d + e,\\            
-  f_5 &= ab + ae + bc + bd + cd + ce + de + a + e + 1
-  \end{align*}
-  
-  
-  
-  These polynomials can be seen as vectors in the vector space spanned by all
-  quadratic monomials. The system can thus be written as a matrix:
-  \[
-  M = \begin{blockarray}{ccccccccccccccccc}
-  ab & ac & ad & ae & bc & bd & be & cd & ce & de & a & b & c & d & e & 1 & \\
-  \begin{block}{[cccccccccccccccc]c}
-  &    &    & 1  & 1  &    & 1  & 1  &    &    & 1 &   &   & 1 & 1 & 1 & f_1\\
-  & 1  & 1  & 1  & 1  & 1  &    &    & 1  & 1  & 1 & 1 &   & 1 &   &   & f_2 \\
-  &    & 1  &    &    &    & 1  & 1  &    &    & 1 & 1 &   & 1 &   & 1 & f_3 \\
-  1 &    & 1  &    &    & 1  & 1  &    &    &    &   & 1 &   & 1 & 1 &   & f_4 \\
-  1 &    &    & 1  & 1  & 1  &    & 1  & 1  & 1  & 1 &   &   &   & 1 & 1 & f_5 \\
-  \end{block}
-  \end{blockarray}
-  \]
-  
-  Next, separate the first $u=3$ variables, and write the polynomials in
-  $\mathbb{F}_2[a,b,c][d,e]$, \textit{i.e.} as polynomials in $d, e$ whose
-  coefficients are themselves polynomials in $a, b, c$. This yields a matrix with
-  coefficients in $\mathbb{F}_2[a,b,c]$:
-  \begin{equation}
-  \label{eq:example_matrix}
-  M(a,b,c) = \begin{blockarray}{ccccc}
-  de & d & e & 1 & \\
-  \begin{block}{[c|c|c|c]c}
-  0 & c+1 & a+b+1 & bc + a + 1 & f_1\\
-  1 & a+b+1 & a+c  & ac +bc + a+b & f_2\\
-  0 & a+c+1 & b & a+b+1          & f_3 \\
-  0 & a+b+1 & b+1 & ab+b  & f_4 \\
-  1 & b+c & a+c+1 & ab+bc+a+1 & f_5 \\
-  \end{block}
-  \end{blockarray}
-  \end{equation}
-  More precisely,
-  the columns corresponding to quadratic (resp. linear, constant) monomials in
-  $d,e$ contain constant (resp. linear, quadratic) terms in $a,b,c$. % Any solution
-  % to the initial polynomial system is also a solution of the following linear system:
-  % \begin{equation}
-  %   \label{eq:example_system}
-  %   \underbrace{\begin{pmatrix}
-  %   0 & c+1   & a+b+1 \\
-  %   1 & a+b+1 & a+c   \\
-  %   0 & a+c+1 & b     \\
-  %   0 & a+b+1 & b+1   \\
-  %   1 & b+c   & a+c+1 \\
-  %     \end{pmatrix}}_{L(a,b,c)}
-  %   \begin{pmatrix}
-  %     de \\
-  %     d \\
-  %     e\\
-  %   \end{pmatrix}
-  %   =
-  %   \underbrace{\begin{pmatrix}
-  %   bc + a + 1 \\
-  %   ac +bc + a+b \\
-  %   a+b+1 \\
-  %   ab+b \\
-  %   ab+bc+a+1 \\
-  % \end{pmatrix}}_{Q(a,b,c)}
-  % \end{equation}
-  
-  Perform linear combinations of the rows to put the columns corresponding to
-  quadratic terms in reduced row echelon form :
-  \[
-  \widetilde M(a,b) = \begin{blockarray}{ccccc}
-  de & d & e & 1 & \\
-  \begin{block}{[c||c|c|c]c}
-  1 & a+b+1 & a+c     & ac +bc+a+b & f_2\\
-  \BAhline\BAhline
-  0 & c+1 & a+b+1 & bc + a + 1 & f_1\\
-  0 & a+c+1 & b & a+b+1          & f_3 \\
-  0 & a+b+1 & b+1 & ab+b  & f_4 \\
-  0 & a+c+1 & 1 & ab+ac +b+1 & f_2 + f_5 \\
-  \end{block}
-  \end{blockarray}
-  \]
-  Any solution to the initial polynomial system is also a solution of the
-  following equations, taken by extracting non-pivotal rows:
-  \[
-  \underbrace{\begin{pmatrix}
-    c+1   & a+b+1 \\
-    a+c+1 & b     \\
-    a+b+1 & b+1   \\
-    a+c+1 & 1     \\
-    \end{pmatrix}}_{L(a,b,c)}
-  \begin{pmatrix}
-  d \\
-  e\\
-  \end{pmatrix}
-  =
-  \underbrace{\begin{pmatrix}
-    bc + a + 1 \\       
-    a + b + 1 \\  
-    ab + b  \\             
-    ab + ac + b + 1 \\
-    \end{pmatrix}}_{Q(a,b,c)}
-  \]
-  
-  Enumerate all the possible values of the first three variables $(a, b, c)$ ; for
-  each combination, solve the linear system $L(a,b,c) \cdot (d,e)^t = Q(a,b,c)$
-  for $(d,e)$. Any solution of the linear system is automatically a satisfying
-  assignment for $\{f_1, f_3, f_4, f_2 + f_5\}$. Check candidate solutions against
-  $f_2$ ; they are then guaranteed to satisfy the original system.
-  
-  The linear system, which is overdetermined, is inconsistent except for
-  $(a,b,c) = (1,0,1)$, where it admits a single solution $(e, d) = (0, 0)$. This
-  solution is indeed a valid satisfying assignment.
-  
-  \section{Formal Description and Heuristic Analysis}
-  \label{sec:description}
-  
-  \begin{algorithm}[t]
-    \caption{\label{the-algo}}
-    \begin{algorithmic}[1]
-      \State Let $A$ denote a $\ell \times v$ matrix of bits and $b$ a size-$\ell$
-      vector of bits
-      \State Compute a basis $g_1, \dots, g_\ell$ of $\mathcal{V}$
-      \State Write $g_i(y, z) = q_i(y) + y\cdot B_i \cdot z^t + C_i \cdot z^t$
-      \For{$\hat y \in \bits^u$}
-      
-      \For{$1 \leq i \leq \ell$}
-      \State $b[i] \gets  q_i(\hat y)$
-      \State $A[i, \cdot] \gets \hat y \cdot B_i + C_i$
-      \EndFor
-      
-      \State Solve the linear system $Az^t = b$
-      
-      \For{each solution $\hat z$}
-      \If{$0 = f_1(\hat y, \hat z) = \dots = f_m(\hat y, \hat z)$}
-      \State \Return $(\hat y, \hat z)$
-      \EndIf
-      \EndFor
-      \EndFor
-      \State \Return $\bot$
-    \end{algorithmic}
-  \end{algorithm}
-  
-  The ring of Boolean polynomials in $n$ variables $x_1, \dots, x_n$, hereafter
-  denoted by $\mathcal{B}[x_1, \dots, x_n]$, is the quotient of the polynomial
-  ring $\mathbb{F}_2[x_1, \dots, x_n]$ by the ideal spanned by the ``field
-  equations'' $\left\langle x_1^2 + x_1, \dots, x_n^2 + x_n\right\rangle$.  As
-  before, we consider a system of $m$ quadratic polynomial equations
-  $\{f_1, \dots, f_m\}$ in $\mathcal{B}[x_1, \dots, x_n]$.
-  
-  Suppose that the $n$ variables $x = (x_1, \dots, x_n)$ are arbitrarily
-  partitioned in two sets with $x = (y, z)$, $y = (y_1, \dots, y_{u})$,
-  $z = (z_1, \dots, z_{v})$ and $u + v = n$. In the sequel, we choose
-  $v = \left\lfloor \sqrt{2m} - 2 \right\rfloor$. This choice guarantees that
-  there are less than $m$ non-constant quadratic monomials in the variables
-  $z_1, \dots, z_v$ and will make it possible to solve quadratic systems of $m$
-  equations in $v$ variables by linearization. Indeed, there are $v(v+1)/2$ such
-  monomials, and this evaluates to $m - 3v/2 - 2$ without rounding $v$ towards
-  zero.
-  
-  We stated in the introduction that the algorithm consists in guessing the first
-  $u$ variables, and solve the remaining system by linearization. In fact, we
-  present below a slight algorithmic refinement which, in our opinion, leads to a
-  simpler formal exposition.
-  
-  % The second step of our simple algorithm consists in solving the linearized
-  % system of equations. The most straightforward method is to perform a Gaussian
-  % elimination on the entire system. Since Gaussian elimination has a significant
-  % computational cost and our choice of $v$ ensures that system is overdetermined,
-  % it can be beneficial to consider only a subset of the system, find its solution
-  % and then, check whether the solution is consistent with the original
-  % system. Choosing the size and composition of this subset introduces a trade-off
-  % between the cost of the Gaussian elimination and the number of solutions to
-  % check. We present here a choice that both allows for a simple formal
-  % description, and is standard in the literature~\cite{--,JouxV17}. \TODO{rajouter
-  %   citation d'autres algos qui utilisent cette méthode}
-  
-  The ring of Boolean polynomials is in particular a vector space. Denote by
-  $\mathcal{U}$ the subspace where the coefficient of all monomials of the form
-  $z_i z_j$ is equal to zero. Consider the subspace spanned by the input
-  polynomials $\left\langle f_1, \dots, f_m\right\rangle$ and let $\mathcal{V}$
-  denote its intersection with $\mathcal{U}$. In other terms, $\mathcal{V}$
-  contains the linear combinations of the input polynomials where the quadratic
-  monomials in $z$ have vanished. The point is that once the values of the
-  $y_1, \dots, y_u$ variables are fixed, then polynomials in $\mathcal{V}$ depend
-  only on $z_1, \dots, z_v$ and they have degree one because their quadratic
-  monomials are absent.
-  
-  Computing a basis $g_1, \dots, g_\ell$ of $\mathcal{V}$ is easy: this can be
-  done by putting the original polynomials in reduced row echelon form with a
-  suitable choice of pivots. The algorithm works by enumerating all possible
-  $\hat y \in \bits^u$, solving $g_1(\hat y, z) = \dots = g_\ell(\hat y, z) = 0$,
-  which is a linear system in $z$, then checking each candidate solution
-  $(\hat y, \hat z)$ against the original system. This is shown in
-  Algorithm~\ref{the-algo}.
-  
-  We write each $g_i$ as $g_i(y, z) = q_i(y) + y B_i z^t + C_i z^t$, where $q_i$
-  is a quadratic polynomial in $\mathcal{B}[y]$, $B_i$ is a $u \times v$ matrix
-  with coefficients in $\mathbb{F}_2$ and $C_i$ is a length-$v$ vector with
-  coefficients in $\mathbb{F}_2$. This amounts to distinguish monomials that
-  depend only on $y$, are bilinear in $(y, z)$ or linear in $z$, respectively.
-  
-  Assuming that the input polynomials are linearly independent (which seems a mild
-  assumption), then the subspace $\mathcal{V}$ has dimension
-  $\ell = m - v(v-1)/2$. Our choice of $v$ guarantees that $\ell \geq 5v/2$.
-  
-  Assembling the linear system (steps 5--7) requires evaluating the $\ell$
-  quadratic polynomials $q_i$'s in $u$ variables and performing $\ell$
-  matrix-vector products with the $B_i$'s which are of size $u \times v$.  This
-  requires $\bigO{\ell u(u+v)}$ operations, while solving the linear system using
-  Gaussian elimination requires $\bigO{\ell v^2}$ operations.
-  
-  Let us assume that $m = \bigTheta{n}$, so that $v = \bigO{\sqrt{n}}$ and
-  $\ell = \bigO{\sqrt{n}}$. Assembling the linear system costs $\bigO{n^{2.5}}$
-  while solving it costs $\bigO{n^{1.5}}$. Assembling the linear system is
-  dominated by the evaluation of the quadratic polynomials. We show in
-  section~\ref{sec:gray} that it is possible to decrease this cost to $\bigO{n}$.
-  
-  The main problem of this algorithm is that it is difficult to bound the total
-  number of iterations of the solution-checking loop (step 9--11). Morally
-  speaking, because the linear system $A z^t = b$ is quite overdetermined, then most
-  of the time there should be no solution at all.
-  
-  Let us make the heuristic assumption that the $b$ vectors are uniformly random
-  (in fact, they are the result of the evaluation of quadratic polynomials). The
-  image of $A$ is a subspace of dimension less than or equal to $v$ in
-  $\bits^\ell$, therefore it contains the random vector $b$ with probability less
-  than $2^{v-\ell}$. When the linear system is consistent, it has at most $2^v$
-  solutions. This yields a crude upper-bound on the expected number of solutions
-  $N$ of each random linear system:
-  \[
-  E(N) \leq 2^v \mathrm{Pr}(\text{the linear system is consistent}) = 2^{2v - \ell} \leq 2^{-v/2}
-  \]
-  It follows that the total time spent checking solutions (in steps 9--11) is
-  asymptotically negligible compared to the rest of the algorithm.  The total
-  expected running time of the algorithm, under the heuristic assumption that the
-  $b$ vectors are random, is $\bigO{n^{2.5} 2^{n - \sqrt{2m}}}$.
-  
-  
-  \section{Practicality}
-  
-  This algorithm can actually be implemented and executed. Toy implementations in
-  a computer algebra systems such as \textsf{SageMath} are easy to write. A
-  serious, user-friendly and competitive implementation in pure C using low-level
-  optimizations is about 650 lines long (it is accessible in the supplementary
-  material). This is possible because the algorithm itself is simple, and because
-  it does not rely on sophisticated data structures or complex sub-algorithms such
-  as fast multivariate polynomial multiplication, fast multipoint
-  evaluation/interpolation, Groebner basis computations or large sparse linear
-  system solvers. In addition, its space complexity is negligible and it is
-  trivially parallelizable.
-  
-  This section discusses what is needed to assemble a serious implementation.
-  
-  \subsection{Faster Polynomial Enumeration Using a Gray Code}
-  \label{sec:gray}
-  
-  As discussed in section~\ref{sec:description}, the running time of the algorithm
-  is dominated by the need to evaluate quadratic polynomials (step 6 of
-  algorithm~\ref{the-algo}). Evaluating a quadratic polynomial on
-  $\hat y \in \bits^u$ naively requires $\bigO{u^2}$ operations. This can be
-  reduced by enumerating all values of $\hat y$ using a \emph{Gray code}, so that only a
-  single bit of $\hat y$ changes at each iteration. This technique seems to belong
-  to the folklore. The point is that once the value of $q_i(\hat y)$ is known,
-  only the monomials that depend on the flipped variable must be reevaluated, and
-  there are only $u$.
-  
-  Consider an arbitrary quadratic polynomial $\displaystyle f(x) = c + \sum_{i=1}^u \sum_{j=1}^u M[i,j] y_i y_j$.
-  
-  Observe that $f(x + y) = f(x) + f(y) + x \left(M + M^t\right)y^t + f(0)$. Let
-  $\hat e_k \in \bits^u$ denote the vector which is zero everywhere except on the
-  $k$-th coordinate.  Define the partial ``derivative'' of $f$ with respect to its
-  $k$-th variable as:
-  \[
-  \frac{\partial f}{\partial k}(y) = f(y) + f(y + \hat e_k).
-  \]
-  Using the above observation, one quickly find that:
-  \[
-  \frac{\partial f}{\partial k}(y) = M[k,k] + \sum_{i=1}^u (M[i,k] + M[k, i]) y_i.
-  \]
-  
-  This suggests the following rearrangement of algorithm~\ref{the-algo}:
-  
-  \begin{algorithmic}[1]
-    \State $\hat y \gets 0$ \Comment{Setup $\hat y$, $A$ and $b$}
-    \For{$1 \leq i \leq \ell$}
-    \State $b[i] \gets  q_i(0)$
-    \State $A[i, \cdot] \gets C_i$
-    \EndFor
-    \For{$1 \leq i \leq 2^u$} \Comment{Main loop}
-    \State Solve the linear system $Az^t = b$ and process its solution as before
-    \State $k \gets $ index of the rightmost bit of $i$ \Comment{Update $\hat y$}
-    \State $\hat y \gets \hat y + \hat e_k$
-    \For{$1 \leq i \leq \ell$} \Comment{Update $A$ and $b$}
-    \State $b[i] \gets b[i] + \frac{\partial q_i}{\partial k}(\hat y)$
-    \State $A[i, \cdot] \gets A[i, \cdot] + B_i[k, \cdot]$
-    \EndFor
-    \EndFor
-  \end{algorithmic}
-  
-  Maintaining $A$ and $b$ consistent with the single-bit updates to $\hat y$ now
-  requires $\bigO{u}$ operations on step 10 and $\bigO{v}$ operations on step
-  11, respectively. All in-all, the total cost of assembling the linear system has dropped from
-  $\bigO{n^{2.5}}$ to $\bigO{n^{1.5}}$, and it now matches that of solving it.
-  
-  This can again be improved a little by observing that each individual ``partial
-  derivative'' is evaluated on related inputs (only two bits differ from one
-  evaluation to the next). Taking advantage of this observation leads to the fast
-  exhaustive search algorithm of Bouillaguet, Chen, Cheng, Chou, Niederhagen,
-  Shamir and Yang~\cite{BouillaguetCCCNSY10}. Using this technique allows to
-  update each $b[i]$ in constant time, and brings down the total time needed to
-  update $A$ and $b$ to $\bigO{n}$.
-  
-  \subsection{Simplifying the Linear Algebra}
-  
-  Implementing these algorithmic optimizations result in a program that spends all
-  its time examining a large number of very small overdetermined linear systems
-  modulo 2 (say, of size $20 \times 10$). Optimizing the linear algebra is
-  therefore the next step. The overwhelming majority of the linear systems will
-  have full rank and be inconsistent. Therefore, it makes sense to process them in
-  two phases:
-  \begin{enumerate}
-    \item Check whether the linear system is both full-rank and inconsistent. If
-    this is the case, move on to the next system. This is performance-critical.
-    \item Otherwise, we actually need to compute a particular solution, or even
-    possibly a basis of the solution space. This is a rare occurrence, so
-    performance is not critical.
-  \end{enumerate}
-  
-  %\medskip
-  We now argue that the second phase is (heuristically) rarely invoked.  As argued
-  in section~\ref{sec:description}, each linear system $Az^t = b$ is consistent
-  with probability less than $2^{-3v/2}$ (under the heuristic assumption that $b$
-  is random). We now crudely lower-bound the probability that a random
-  $\ell \times v$ matrix is full rank. This happens when each column is chosen out
-  of the linear span of the previous columns, and the probability of this event
-  is:
-  \[
-  p := \prod_{j=\ell-v+1}^\ell \left(1 - 2^{-j} \right)
-  \]
-  This is always greater than $\left(1 - 2^{v-\ell} \right)^v$. Let $e$ denote the
-  \emph{excess ratio} $e := \ell/v - 1$. Because we always have $\ell \geq 2v$,
-  then $e \geq 1$. This implies that $p \geq \left(1 - 2^{-ev} \right)^v$. Taking
-  an asymptotic expansion for $v \rightarrow +\infty$ shows that this is
-  $1 - v 2^{-ev} + \bigO{v^2 2^{-2ev}}$. Therefore, we expect the proportion of
-  rank-defective linear systems to be smaller than $v 2^{v-\ell}$. In practice,
-  this holds quite well.
-  
-  \subsection{Vectorization}
-  
-  \emph{Vectorization} is a key implementation technique to obtain competitive
-  performance on contemporary hardware, leading to a constant speedup of about
-  $40 \times$.
-  
-  Consider a Boolean circuit $\mathcal{C}$ with $(\ell+1)v$ input wires for $A$
-  and $b$ as well as $v$ output wires for $z$ and two extra output wires $c$ and
-  $d$. The $c$ output wire indicates whether the linear system $A z^t = b$ is
-  \emph{consistent} while the $d$ output wire indicates whether the matrix $A$ is
-  \emph{rank-defective}.
-  
-  The point is that on a CPU equipped with $w$-bit registers, $w$ copies of the
-  circuit can be evaluated in parallel on $w$ distinct inputs by performing normal
-  Boolean operations between registers (the $i$-th copy operates on the $i$-th bit
-  of all $w$-bit values). Most current \textsf{x86-64} CPUs have \textsf{AVX2}
-  instructions, which allows to perform Boolean operations on 256-bit registers.
-  
-  This allows to group the iterations of the main loop of the algorithm in batches
-  of size $w$. The most common situation is that all linear systems are full-rank
-  and inconsistent (which results in $d \vee c = 0000 \dots 000$). In this case,
-  there is nothing to do except moving on to the next batch. Otherwise, the
-  individual elements of the batch must be examined, but this is a rare occurrence.
-  
-  Such a Boolean circuit is not difficult to obtain, as this amounts to perform an
-  LU factorization of $A$ with partial pivoting.  We actually use the following
-  relaxed specification: if $d=1$ (the system does not have full-rank), then the
-  other outputs are unspecified. If $d=0$ and $c=0$, then the system is
-  inconsistent ; lastly, if $d=0$ and $c=1$ then the only solution of the system
-  can be read on the $z$ wires. Giving up on producing a meaningful result when
-  the system is rank-defective allows several simplifications that reduce the size
-  of the circuit. Actually obtaining the solution $z$ when the system is
-  consistent has negligible cost. The circuit we use has approximately $3\ell v^2$
-  gates.
-  
-  \subsection{Comparison with exhaustive search}
-  
-  The wall-clock running time of fast software implementations of exhaustive
-  search is $T = \alpha 2^n$, for some constant $\alpha$ which depends on the
-  implementation and on the machine. The running time of this algorithm presented
-  in this paper is $T' = P(m) 2^{n - 2\sqrt{m}}$, for some polynomial $P$ that
-  also depends on the machine. An implementation of our algorithm ``beats brute
-  force'' when $T/T' > 1$, in other terms when
-  $\alpha 2^{\sqrt{2m}} > P(m)$. This always happens for sufficiently large
-  $m$, \textit{i.e.} if there are sufficiently many equations, regardless of the
-  number of variables.
-  
-  We use the exhaustive search implementation in \textsf{libfes-lite} for
-  comparison. Determining the threshold $m$ such that both programs take the same
-  time is a simple matter ; using a single core on the recent laptop of one of the
-  authors, we found that it is $m=48$, which we consider to be rather low. In that
-  case, both program take about two hours to run.
-  
-  Solving a random system of 512 quadratic equations in 64 variables takes less
-  than 15 minutes on a laptop using this algorithm (using a single core) ; it
-  would take 16 years using exhaustive search.
-  
-  
-  \section{Making it complicated with Higher-Degree Multiples}
-  \label{sec:extensions}
-  
-  
-  Our simple algorithm exploits the well-known property that a quadratic polynomial system can be solved in polynomial time by linearization when $m \geq n(n+1)/2$.
-  By guessing variables, we decrease the value of $n$ until we obtain this ratio. A contrasting idea is to increase the value of $m$ by adding new polynomials of the form $uf_i$ where $u$ is a monomial in $\mathcal{B}[x_1, \dots, x_n]$.
-  Note that when we add these multiples, the degree of the system grows and as a result, the total number of monomials in the system grows as well. The lowest degree at which we achieve the required ratio to solve the system through linearization is called the \textit{degree of regularity}. This method is used in almost all state-of-the-art algorithms for solving multivariate polynomial systems~\cite{F4,F5,CourtoisKPS00,BardetFSS13,JouxV17}. 
-  
-  In this section, we explore how the common method of using higher-degree multiples can be used to extend this algorithm following two different axes.
-  %
-  One of them leads to the \textsf{Crossbred} algorithm~\cite{JouxV17}, the other
-  one gives a simple algorithm which, as far as we know, has not been described
-  in the literature yet.
-  
-  
-  \subsection{The \textsf{Crossbred} algorithm}\label{sec:JV}
-  
-  The general idea of \textsf{Crossbred} algorithm can be described as follows.
-  Given a set of $m$ quadratic polynomials $f_i$ in $n$ variables over $\mathbb{F}_2$, 
-  and $D \geq 2$, the first step consists in
-  increasing the size of the initial system by multiplying each of the $f_i$
-  polynomials by monomials of degree less than or equal to $D-2$ 
-  (i.e. construct the Macaulay matrix of degree $D$).
-  Then, consider the linear space spanned 
-  by these polynomials $f_1, \dots, f_m, x_1f_1, \dots x_{n-(D-1)}\dots x_{n}f_m$. 
-  We denote by $\mathcal{V}$ its subspace where all the coefficients of all 
-  monomials of degree $D -2$ are equal to zero. Similar to what has been 
-  described in Section~\ref{sec:description}, a basis $g_1, \dots, g_\ell$ of
-  $\mathcal{V}$ is easily computed via linear algebra. Once again, the set of variables
-  is split in two subsets of size $u$ and $v$ such that when the values $y_1, \dots, y_u$
-  are fixed, the $g_i$ polynomials become linear and only depend on $z_1, \dots, z_v$.
-  The algorithm enumerates all possible $y_1, \dots, y_u$, solves the smaller system in the $z_i$
-  variables and checks whether the solution is consistent.
-  
-  It is trivial to see that in the case $D=2$ this is the same as Algorithm~\ref{the-algo}.
-  Let us see what happens in the case $D=3$. The first step consists in multiplying each of
-  the $m$ initial polynomials by every variables $x_i$. This will lead to a total of
-  $m(n+1)$ polynomials in the new system (i.e. $m$ polynomials of degree 2 and $nm$ polynomials
-  of degree 3). Then, we need to guess $u$ variables $y_1, \dots, y_u$ so that the remaining system
-  is linear in $z$. This gives us nine different types of monomials:
-  $y_i, z_k, y_iy_j, y_iz_k, z_jz_k, y_iy_jy_k, y_iy_jz_k, y_iz_jz_k$ and $z_iz_jz_k$.
-  In order to have at least $v$ equations linear in the $z_i$ variables once the values of $y_1, \dots, y_u$
-  are fixed, we have to eliminate terms of degree 2 and 3 in $z$ first. In other words,
-  we need to eliminate the $z_jz_k, y_iz_jz_k, z_iz_jz_k$ monomials using at most $m(n+1) - v$ equations
-  using linear algebra. The number of monomials that have to be eliminate is given by:
-  \[
-  \#\{z_iz_j\} + \#\{y_iz_iz_j\} +\#\{z_iz_jz_k\}
-  = \binom{v}{2} + (n-v)\binom{v}{2} +\binom{v}{3}.
-  \]
-  Thus, in order to estimate $v$, we need to solve:
-  \[
-  m(n+1) -v = (n-v +1)\binom{v}{2} + \binom{v}{3}.
-  \]
-  The solution to this equation is not easy to express in function of $n$ and $m$, but a quick
-  numerical simulation can easily check that for $m=n$, $v/\sqrt{2m} = 1+\epsilon$. Furthermore,
-  the limit of $v/\sqrt{2m}$ equals 1 as $n$ grows toward the infinity. Although it does not seems
-  to be much better than the case $D=2$, it can lead to significant improvements in
+\maketitle
+
+\begin{abstract}
+  This article discusses a simple deterministic algorithm for solving quadratic
+  Boolean systems which is essentially a special case of more sophisticated
+  methods. The main idea fits in a single sentence: guess enough of variables so
+  that the remaining quadratic equations can be solved by linearization
+  (\textit{i.e.} by considering each remaining monomial as an independent
+  variable and solving the resulting linear system). Under strong heuristic
+  assumptions, this finds all the solutions of $m$ quadratic polynomials in $n$
+  variables with $\bigOsoft{2^{n-\sqrt{2m}}}$ operations. Although this the best
+  known algorithm require exponentially less operations, the present technique
+  has the advantage of being simpler to describe and easy to implement. In
+  strong contrast with the state-of-the-art, it is also quite efficient in
   practice.
-  
-  
-  
-  
-  % sage: # vrai JV                                                                                                             
-  % sage: eqs = (n+1) * m                                                                                                         
-  % sage: # vrai JV (en degré 3)                                                                                                  
-  % sage: a_eliminer = binomial(v, 3) + binomial(v, 2) * (n-v+1)                                                                  
-  % sage: solve(eqs == a_eliminer + v, v)                                                                                         
-  % [v == -1/4*(1/3)^(2/3)*(3*(n + 1)^2 - 6*n + 10)*(-I*sqrt(3) + 1)/(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3) - 1/4*(1/3)^(1/3)*(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3)*(I*sqrt(3) + 1) + 1/2*n + 1/2, v == -1/4*(1/3)^(2/3)*(3*(n + 1)^2 - 6*n + 10)*(I*sqrt(3) + 1)/(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3) - 1/4*(1/3)^(1/3)*(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3)*(-I*sqrt(3) + 1) + 1/2*n + 1/2, v == 1/2*(1/3)^(2/3)*(3*(n + 1)^2 - 6*n + 10)/(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3) + 1/2*n + 1/2*(1/3)^(1/3)*(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3) + 1/2]
-  % sage: x = -1/4*(1/3)^(2/3)*(3*(n + 1)^2 - 6*n + 10)*(-I*sqrt(3) + 1)/(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(
-  % ....: -27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1
-  % ....: 225/3))^(1/3) - 1/4*(1/3)^(1/3)*(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 
-  % ....: 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3)*(I*sqrt(3) + 1) +
-  % ....:  1/2*n + 1/2
-  
-  
-  \subsection{Simple linearization}
-  
-  First, we augment the initial polynomial system by adding multiples of the form $uf_i$ with a restriction to the overall degree. As described in Section~\ref{sec:JV}, to restrict the degree to $D$, we need to consider only monomials $u$ of degree lesser than or equal to $D-2$. After we obtain the augmented system, we proceed as before: guess sufficiently many variables so that the remaining polynomial system can be solved by linearization. 
-  
-  The parameter $v$ is again chosen as the highest value where the number of monomials is lesser than or equal to the number of equations. The number of monomials is easily computed by: $\sum_{i=1}^{D}\binom{n}{i}$. However, estimating the number of equations is not as straightforward, as we need to take into account the number of multiples that will give trivially dependent linear equations. For instance, when we restrict the degree to three, we can create at most $mn$ multiples of degree three, which gives us a total of $m(n+1)$ equations in the system. However multiples of the form $y_jf_i$ are not useful, as once the values $y_1,\dots y_u$ are fixed, $y_jf_i$ is equal to either 0 or $f_i$. Thus, the number of equations in the augmented system, when $D=3$ is $m(v+1)$, and the system can be solved through linearization when $m(v+1) \geq v(v^2+5)/2$. We approximate the choice of $v$ to $\left\lfloor \sqrt{6m} \right\rfloor$.
-  Note that this value is an upper-bound. In practice it is possible that monomials get canceled out
-  leading to equations that are (not trivially) linearly dependent. However, we experimented with small
-  parameters and found out that, on systems that are randomly created, the actual value of $v$ does not
-  differ much from this bound. 
-  For the case $D=4$, similarly, we only consider multiples of the form 
-  $z_jz_kf_i$ to be useful, which allows us to create $v(v+1)/2$ new equations. 
-  However, there are also relations of the form $f_if_j + f_jf_i=0$ and $(f_i+1)f_i=0$ 
-  that result in trivially dependent equations. 
-  %Thus, the total number of equations is $m(v(v+1)/2+1)-m(m+1)/2$ and we choose $v$ such that $m(v(v+1)/2+1)-m(m+1)/2 \geq (v^4-2v^3+11v^2+14v)/24$. \TODO{simplifier et/ou approximer}. Note that these values are upper-bounds. In practice, we can have monomials that get cancelled out and equations that are (not trivially) linearly dependent. However, we experimented with small parameters for the $D=3$ case and found that, on systems that are randomly created, with one planted solution, the obtained values do not differ enough from the upper-bound to change the estimate of $v$. 
-  As a result, for $D > 4$, estimating the number of equations is more complicated. As the degree grows, the dimension of polynomials in the polynomial ring $\mathcal{B}[x_1, \dots, x_n]$ that are not in the ideal generated by $\{f_1, \dots, f_m\}$ becomes smaller (see Hilbert Function~\cite{Ideals_varieties_algos}), and thus, we obtain more and more trivial relations.
-  
-  
-  This approach of considering higher-degree multiples yields higher values of $v$, which results in having to guess less variables before linearization. In contrast, the Gaussian elimination is done on a bigger linear system. This suggests that using higher degrees gives a better asymptotic complexity, but is not more efficient for practical parameters. Since the goal of this paper is to give a simple algorithm that is practically efficient, we do not use higher-degree multiples in our implementation. This extension and its further analysis will be left for future work. 
-  
-  
-  
-  \bibliography{biblio}
-  
+\end{abstract}
+
+
+\clearpage
+
+\section{Introduction}
+
+We consider the problem of solving systems of multivariate quadratic Boolean
+polynomial equations. Given a set of quadratic Boolean polynomials
+$\{f_1, \dots, f_m\}$, the problem consists in finding a satisfying assignment
+$\hat x \in \bits^n$ such that $f_i(\hat x) = 0$ for $1 \leq i \leq m$, or
+determining that none exist. Each polynomial is represented as the sum of
+quadratic terms $x_i x_j$, linear terms $x_i$ and a constant term. Because
+$x^2 = x$ modulo 2, we assume that the exponent of each variable is either 0 or
+1.
+
+
+% A quadratic Boolean
+% polynomial can be represented by a constant $c$ and an $n \times n$ matrix $A$
+% such that $f(x) = c + x A x^t$, which expands to
+% $c + \sum_{i=1}^n \sum_{j=1}^n A[i,j] x_i x_j$ ; $c$ is the constant term, 
+
+It is well-known that the problem is NP-complete, with a simple reduction from
+SAT. It is relevant to the cryptology community because its hardness can be used
+to build ``post-quantum'' encryption or signature schemes. Many have been
+proposed with concrete sets of parameters, such as HFE~\cite{Patarin96},
+UOV~\cite{KipnisPG99}, MQDSS~\cite{ChenHRSS16} and variants thereof. Several
+have been submitted to the ongoing competition launched in 2017 by the
+(American) National Institute of Standards and Technology in order to select a
+portfolio of ``post-quantum'' public-key cryptographic algorithms. For instance,
+among these, the \textsf{GeMSS} signature scheme exposes a public key consisting
+of $m=162$ Boolean quadratic polynomials in $n=192$ variables. It follows that
+the relevant range of parameters for cryptographic instances is essentially
+$m \approx n$ and $n \approx 200$ at this point: solving quadratic Boolean
+systems of this size is assumed to be intractable (much smaller systems seem
+practically out of reach as well). Note that in the context of cryptology, the
+average case complexity is more relevant than the worst case, because
+cryptographic instances of the problem are (presumably indistinguishable from)
+random. In addition, there is empirical evidence that random systems are hard to
+solve. The algorithmic problem is thus both of theoretical and of practical
+interest, and many algorithms have been proposed to solve it.
+
+In this paper, we present a \emph{decremental} improvement over the
+state-of-the-art: a simple deterministic algorithm, which is essentially a
+special of exponentially better techniques. It (only) achieves a sub-exponential
+advantage over exhaustive search in the average case, but it is extremely simple
+and quite easy to implement efficiently. The algorithm works as follows:
+
+\begin{framed}
+  Guess sufficiently many variables so that the remaining polynomial system can
+  be solved by \emph{linearization} (\textit{i.e.} by considering each remaining
+  monomial as an independent variable, solving the resulting linear system and
+  checking each solution against the original polynomial system).
+\end{framed}
+
+More precisely, guess the values of all variables except the
+$\left\lfloor \sqrt{2m} - 2 \right\rfloor$ last ones. There remain strictly less
+than $m$ (non-constant) monomials of degree less than two in the remaining
+variables, which enables the use of the linearization technique. This results in
+a complexity of $\bigOsoft{2^{n - \sqrt{2m}}}$.
+
+This algorithm is a particularly simple special case of several other more
+complex algorithms from the cryptology community, including but not limited
+to~\cite{CourtoisKPS00,BettaleFP09,JouxV17}. However, to the best of our
+knowledge, this simple form was not discussed \textit{per se}.
+
+
+\subsection{Related Work}
+\label{sec:related}
+
+Exhaustive search is the baseline method to solve systems of Boolean quadratic
+polynomial equations, with a running time $\bigOsoft{2^n}$ and negligible space
+complexity. Using several algorithmic tricks and low-level optimizations, it can
+be implemented extremely efficiently~\cite{BouillaguetCCCNSY10}. In particular,
+the implementation in the \textsf{libfes-lite}
+library\footnote{\url{https://gitlab.lip6.fr/almasty/libfes-lite}}, which is
+state-of-the-art to the best of our knowledge, checks several candidate
+solutions per CPU cycle~\cite{BouillaguetCCCNSY10}, which means that the factors
+hidden in the big Oh notation are extremely small. It follows that ``beating
+brute force'' \emph{in practice}, namely assembling an implementation that runs
+faster on existing hardware than exhaustive search, for problem sizes that are
+feasible, is a significant achievement.
+
+Systems that are very underdetermined ($n \geq m^2$) or very overdetermined
+($m \geq 0.5 n^2$) can be solved in polynomial time by simple
+techniques~\cite{CourtoisGMT02}. This suggest that $m \approx n$ is the hardest
+case, and it is common in cryptology (we usually have $m=2n$ for encryption and
+$n = 2m$ or $n=3m$ for signatures). Very overdetermined systems can
+(heuristically) be solved by linearization: there are $n(n+1)/2$ non-constant
+Boolean monomials in $n$ variables ; consider each one as an independent fresh
+variable ; provided there are as many (linearly independent) quadratic
+equations, this yields a linear system with a (presumably) small number of
+solutions. This system can be solved in polynomial time, and each solution
+reveals a possible value of the variables. On random input systems, we expect to
+have a single solution.
+
+The next family of algorithms are algebraic manipulation techniques that derive,
+in a way or another, from the Buchberger algorithm for computing Groebner
+bases. Given a Groebner basis of the original polynomial equations, it is easy
+to read a potential solution. These algorithms are neither limited to quadratic
+polynomials nor to the Boolean field. Their average case complexity is
+notoriously difficult to study, and it requires algebraic assumptions
+(regularity or semi-regularity) on the input polynomials. The state of the art,
+at this point, seems to be the \textsf{F4} and \textsf{F5} algorithms by
+Faugère~\cite{F4,F5}. \textsf{F4} is essentially a reformulation of the
+Buchberger algorithm that does batch processing using efficient sparse linear
+algebra instead of polynomial manipulations. \textsf{F5} strives to eliminate
+some useless computations. Bardet, Faugère and Salvy~\cite{BardetFS15} show that
+a simplified version of \textsf{F5} computes a Groebner basis of a regular
+sequence of quadratic polynomials in $\bigOsoft{2^{4.295n}}$ field operations,
+over any finite field (therefore it ``beats brute force'' on fields with more
+than 20 elements). Efficient implementations of \textsf{F4} are available in
+off-the-shelf computer algebra systems, notably
+\textsf{MAGMA}~\cite{MAGMA}. Faugère's algorithms have been successful in
+breaking some cryptosystems, most notably an instance of \textsf{HFE} with
+$n=80$ variables, which turned to be spectacularly weak against Groebner basis
+computations~\cite{FaugereJ03}. Variants of these algorithms have been
+rediscovered by the crypto community under the name \textsf{XL}, notably by
+Courtois, Klimov, Patarin and Shamir~\cite{CourtoisKPS00}.
+
+All these algorithms have exponential space complexity and existing
+implementation run into memory limitations even for a moderate number of
+variables. Implementing them is non-trivial, because they require either
+sophisticated data-structure for large-degree multivariate polynomials and/or
+sparse linear algebra over large matrices. Existing implementations are usually
+available inside full-blown computer algebra systems, which are large and
+complex software projects.
+
+It is well-known that solving systems by Groebner basis computation is easier on
+overdetermined systems. In the extreme, on sufficiently overdetermined
+polynomial systems, Groebner basis computations degenerate into Gaussian
+elimination and work in polynomial time. This is the basis for the ``hybrid
+method'' which combines exhaustive search and algebraic techniques: guess the
+values of some variables, then compute a Groebner basis of the remaining system
+which has become overdetermined. Bettale, Faugère and Perret discuss the optimal
+number of variables to fix~\cite{BettaleFP09}. The \textsf{BooleanSolve}
+algorithm of Bardet, Faugère, Salvy and Spaenlehauer~\cite{BardetFSS13} is the
+best embodiment of this idea at this point, with running time
+$\bigOsoft{2^{0.792n}}$ on average, under algebraic assumptions. It guesses some
+variables, then checks if a polynomial combination of the remaining polynomials
+is equal to 1. When it is the case, then the guessed values are incorrect (by
+Hilbert's Nullstellensatz). This in turn is accomplished by deciding whether
+large sparse linear systems have a solution. The inventors of
+\textsf{BooleanSolve} claim that it is slower than exhaustive search when
+$n \leq 200$, which seems to make it practically useless. While conceptually
+simple, the algorithm is likely hard to implement because it requires a sparse
+linear system solver for exponentially large matrices. To the best of our
+knowledge, no implementations has ever been written.
+% It must be noted that
+% the algorithm which is the center of this paper is essentially a special case of
+% the hybrid method.
+
+
+The \textsf{Crossbred} algorithm of Joux and Vitse~\cite{JouxV17} also belongs
+to the ``guess variables then solve a linear system'' family of algorithms. Its
+asymptotic complexity is not precisely known, but its practical efficiency is
+spectacular: it has been used to solve a random system with $n = 74$ variables
+and $m=148$ equations, which is the current record (this would require about 150
+million CPU hours using exhaustive search). There is a public implementation
+that uses GPUs by Niederhagen, Ning and Yang~\cite{NiederhagenNY18}. This
+algorithm is discussed more in-depth in section~\ref{sec:extensions}.
+
+A completely different family of algorithms, called the ``polynomial method'' by
+Dinur, emerged in 2017 when Lokshtanov, Paturi, Tamaki, Williams and
+Yu~\cite{LokshtanovPTWY17} presented a randomized algorithm of complexity
+$\bigOsoft{2^{0.8765n}}$. In strong contrast with almost all the previous ones,
+the algorithm does not require any assumption on the input polynomials, which is
+a theoretical breakthrough. The algorithm works by assembling a high-degree
+polynomial that evaluates to 1 on partial solutions, then approximates it by
+lower-degree polynomials. The technique was later improved by Björklund, Kaski
+and Williams~\cite{BjorklundK019}, reaching $\bigOsoft{2^{0.804n}}$, then again
+by Dinur~\cite{Dinur21}, reaching $\bigOsoft{2^{0.6943n}}$.
+
+Noting that the self-reduction that results in this low asymptotic complexity
+only kicks in for very large values of $n$, Dinur proposed a simpler,
+lightweight and ``concretely efficient'' version of his algorithm for the crypto
+community with complexity $\bigO{n^2 2^{0.815n}}$ using $n^2 2^{0.63n}$ bits of
+memory~\cite{Dinur21ec}. A closer look reveals that this is, in fact, concretely impractical: the
+algorithm requires more than $2^n$ operations as long as $n \leq 65$, and for
+$n \geq 66$ it requires at least 1.5 petabyte of memory (the most powerful
+computer in the world at the time of writing, \texttt{fugaku}, has about 5
+petabyte of memory spread over more than 150\ 000 computing nodes). All other
+incarnations of the ``polynomial
+method''~\cite{LokshtanovPTWY17,BjorklundK019,Dinur21} are even worse from a
+practical standpoint.  They are therefore mostly of theoretical interest.
+
+
+\section{A Toy Example}
+
+Consider the following system in 5 variables:
+\begin{align*}
+f_1 &= ae + bc + be + cd + a + d + e + 1,\\
+f_2 &= ac + ad + ae + bc + bd + ce + de + a + b + d,\\
+f_3 &= ad + be + cd  + a + b + d + 1,\\
+f_4 &= ab + ad + bd + be + b + d + e,\\            
+f_5 &= ab + ae + bc + bd + cd + ce + de + a + e + 1
+\end{align*}
+
+
+
+These polynomials can be seen as vectors in the vector space spanned by all
+quadratic monomials. The system can thus be written as a matrix:
+\[
+M = \begin{blockarray}{ccccccccccccccccc}
+ab & ac & ad & ae & bc & bd & be & cd & ce & de & a & b & c & d & e & 1 & \\
+\begin{block}{[cccccccccccccccc]c}
+&    &    & 1  & 1  &    & 1  & 1  &    &    & 1 &   &   & 1 & 1 & 1 & f_1\\
+& 1  & 1  & 1  & 1  & 1  &    &    & 1  & 1  & 1 & 1 &   & 1 &   &   & f_2 \\
+&    & 1  &    &    &    & 1  & 1  &    &    & 1 & 1 &   & 1 &   & 1 & f_3 \\
+1 &    & 1  &    &    & 1  & 1  &    &    &    &   & 1 &   & 1 & 1 &   & f_4 \\
+1 &    &    & 1  & 1  & 1  &    & 1  & 1  & 1  & 1 &   &   &   & 1 & 1 & f_5 \\
+\end{block}
+\end{blockarray}
+\]
+
+Next, separate the first $u=3$ variables, and write the polynomials in
+$\mathbb{F}_2[a,b,c][d,e]$, \textit{i.e.} as polynomials in $d, e$ whose
+coefficients are themselves polynomials in $a, b, c$. This yields a matrix with
+coefficients in $\mathbb{F}_2[a,b,c]$:
+\begin{equation}
+\label{eq:example_matrix}
+M(a,b,c) = \begin{blockarray}{ccccc}
+de & d & e & 1 & \\
+\begin{block}{[c|c|c|c]c}
+0 & c+1 & a+b+1 & bc + a + 1 & f_1\\
+1 & a+b+1 & a+c  & ac +bc + a+b & f_2\\
+0 & a+c+1 & b & a+b+1          & f_3 \\
+0 & a+b+1 & b+1 & ab+b  & f_4 \\
+1 & b+c & a+c+1 & ab+bc+a+1 & f_5 \\
+\end{block}
+\end{blockarray}
+\end{equation}
+More precisely,
+the columns corresponding to quadratic (resp. linear, constant) monomials in
+$d,e$ contain constant (resp. linear, quadratic) terms in $a,b,c$. % Any solution
+% to the initial polynomial system is also a solution of the following linear system:
+% \begin{equation}
+%   \label{eq:example_system}
+%   \underbrace{\begin{pmatrix}
+%   0 & c+1   & a+b+1 \\
+%   1 & a+b+1 & a+c   \\
+%   0 & a+c+1 & b     \\
+%   0 & a+b+1 & b+1   \\
+%   1 & b+c   & a+c+1 \\
+%     \end{pmatrix}}_{L(a,b,c)}
+%   \begin{pmatrix}
+%     de \\
+%     d \\
+%     e\\
+%   \end{pmatrix}
+%   =
+%   \underbrace{\begin{pmatrix}
+%   bc + a + 1 \\
+%   ac +bc + a+b \\
+%   a+b+1 \\
+%   ab+b \\
+%   ab+bc+a+1 \\
+% \end{pmatrix}}_{Q(a,b,c)}
+% \end{equation}
+
+Perform linear combinations of the rows to put the columns corresponding to
+quadratic terms in reduced row echelon form :
+\[
+\widetilde M(a,b) = \begin{blockarray}{ccccc}
+de & d & e & 1 & \\
+\begin{block}{[c||c|c|c]c}
+1 & a+b+1 & a+c     & ac +bc+a+b & f_2\\
+\BAhline\BAhline
+0 & c+1 & a+b+1 & bc + a + 1 & f_1\\
+0 & a+c+1 & b & a+b+1          & f_3 \\
+0 & a+b+1 & b+1 & ab+b  & f_4 \\
+0 & a+c+1 & 1 & ab+ac +b+1 & f_2 + f_5 \\
+\end{block}
+\end{blockarray}
+\]
+Any solution to the initial polynomial system is also a solution of the
+following equations, taken by extracting non-pivotal rows:
+\[
+\underbrace{\begin{pmatrix}
+  c+1   & a+b+1 \\
+  a+c+1 & b     \\
+  a+b+1 & b+1   \\
+  a+c+1 & 1     \\
+  \end{pmatrix}}_{L(a,b,c)}
+\begin{pmatrix}
+d \\
+e\\
+\end{pmatrix}
+=
+\underbrace{\begin{pmatrix}
+  bc + a + 1 \\       
+  a + b + 1 \\  
+  ab + b  \\             
+  ab + ac + b + 1 \\
+  \end{pmatrix}}_{Q(a,b,c)}
+\]
+
+Enumerate all the possible values of the first three variables $(a, b, c)$ ; for
+each combination, solve the linear system $L(a,b,c) \cdot (d,e)^t = Q(a,b,c)$
+for $(d,e)$. Any solution of the linear system is automatically a satisfying
+assignment for $\{f_1, f_3, f_4, f_2 + f_5\}$. Check candidate solutions against
+$f_2$ ; they are then guaranteed to satisfy the original system.
+
+The linear system, which is overdetermined, is inconsistent except for
+$(a,b,c) = (1,0,1)$, where it admits a single solution $(e, d) = (0, 0)$. This
+solution is indeed a valid satisfying assignment.
+
+\section{Formal Description and Heuristic Analysis}
+\label{sec:description}
+
+\begin{algorithm}[t]
+  \caption{\label{the-algo}}
+  \begin{algorithmic}[1]
+    \State Let $A$ denote a $\ell \times v$ matrix of bits and $b$ a size-$\ell$
+    vector of bits
+    \State Compute a basis $g_1, \dots, g_\ell$ of $\mathcal{V}$
+    \State Write $g_i(y, z) = q_i(y) + y\cdot B_i \cdot z^t + C_i \cdot z^t$
+    \For{$\hat y \in \bits^u$}
+    
+    \For{$1 \leq i \leq \ell$}
+    \State $b[i] \gets  q_i(\hat y)$
+    \State $A[i, \cdot] \gets \hat y \cdot B_i + C_i$
+    \EndFor
+    
+    \State Solve the linear system $Az^t = b$
+    
+    \For{each solution $\hat z$}
+    \If{$0 = f_1(\hat y, \hat z) = \dots = f_m(\hat y, \hat z)$}
+    \State \Return $(\hat y, \hat z)$
+    \EndIf
+    \EndFor
+    \EndFor
+    \State \Return $\bot$
+  \end{algorithmic}
+\end{algorithm}
+
+The ring of Boolean polynomials in $n$ variables $x_1, \dots, x_n$, hereafter
+denoted by $\mathcal{B}[x_1, \dots, x_n]$, is the quotient of the polynomial
+ring $\mathbb{F}_2[x_1, \dots, x_n]$ by the ideal spanned by the ``field
+equations'' $\left\langle x_1^2 + x_1, \dots, x_n^2 + x_n\right\rangle$.  As
+before, we consider a system of $m$ quadratic polynomial equations
+$\{f_1, \dots, f_m\}$ in $\mathcal{B}[x_1, \dots, x_n]$.
+
+Suppose that the $n$ variables $x = (x_1, \dots, x_n)$ are arbitrarily
+partitioned in two sets with $x = (y, z)$, $y = (y_1, \dots, y_{u})$,
+$z = (z_1, \dots, z_{v})$ and $u + v = n$. In the sequel, we choose
+$v = \left\lfloor \sqrt{2m} - 2 \right\rfloor$. This choice guarantees that
+there are less than $m$ non-constant quadratic monomials in the variables
+$z_1, \dots, z_v$ and will make it possible to solve quadratic systems of $m$
+equations in $v$ variables by linearization. Indeed, there are $v(v+1)/2$ such
+monomials, and this evaluates to $m - 3v/2 - 2$ without rounding $v$ towards
+zero.
+
+We stated in the introduction that the algorithm consists in guessing the first
+$u$ variables, and solve the remaining system by linearization. In fact, we
+present below a slight algorithmic refinement which, in our opinion, leads to a
+simpler formal exposition.
+
+% The second step of our simple algorithm consists in solving the linearized
+% system of equations. The most straightforward method is to perform a Gaussian
+% elimination on the entire system. Since Gaussian elimination has a significant
+% computational cost and our choice of $v$ ensures that system is overdetermined,
+% it can be beneficial to consider only a subset of the system, find its solution
+% and then, check whether the solution is consistent with the original
+% system. Choosing the size and composition of this subset introduces a trade-off
+% between the cost of the Gaussian elimination and the number of solutions to
+% check. We present here a choice that both allows for a simple formal
+% description, and is standard in the literature~\cite{--,JouxV17}. \TODO{rajouter
+%   citation d'autres algos qui utilisent cette méthode}
+
+The ring of Boolean polynomials is in particular a vector space. Denote by
+$\mathcal{U}$ the subspace where the coefficient of all monomials of the form
+$z_i z_j$ is equal to zero. Consider the subspace spanned by the input
+polynomials $\left\langle f_1, \dots, f_m\right\rangle$ and let $\mathcal{V}$
+denote its intersection with $\mathcal{U}$. In other terms, $\mathcal{V}$
+contains the linear combinations of the input polynomials where the quadratic
+monomials in $z$ have vanished. The point is that once the values of the
+$y_1, \dots, y_u$ variables are fixed, then polynomials in $\mathcal{V}$ depend
+only on $z_1, \dots, z_v$ and they have degree one because their quadratic
+monomials are absent.
+
+Computing a basis $g_1, \dots, g_\ell$ of $\mathcal{V}$ is easy: this can be
+done by putting the original polynomials in reduced row echelon form with a
+suitable choice of pivots. The algorithm works by enumerating all possible
+$\hat y \in \bits^u$, solving $g_1(\hat y, z) = \dots = g_\ell(\hat y, z) = 0$,
+which is a linear system in $z$, then checking each candidate solution
+$(\hat y, \hat z)$ against the original system. This is shown in
+Algorithm~\ref{the-algo}.
+
+We write each $g_i$ as $g_i(y, z) = q_i(y) + y B_i z^t + C_i z^t$, where $q_i$
+is a quadratic polynomial in $\mathcal{B}[y]$, $B_i$ is a $u \times v$ matrix
+with coefficients in $\mathbb{F}_2$ and $C_i$ is a length-$v$ vector with
+coefficients in $\mathbb{F}_2$. This amounts to distinguish monomials that
+depend only on $y$, are bilinear in $(y, z)$ or linear in $z$, respectively.
+
+Assuming that the input polynomials are linearly independent (which seems a mild
+assumption), then the subspace $\mathcal{V}$ has dimension
+$\ell = m - v(v-1)/2$. Our choice of $v$ guarantees that $\ell \geq 5v/2$.
+
+Assembling the linear system (steps 5--7) requires evaluating the $\ell$
+quadratic polynomials $q_i$'s in $u$ variables and performing $\ell$
+matrix-vector products with the $B_i$'s which are of size $u \times v$.  This
+requires $\bigO{\ell u(u+v)}$ operations, while solving the linear system using
+Gaussian elimination requires $\bigO{\ell v^2}$ operations.
+
+Let us assume that $m = \bigTheta{n}$, so that $v = \bigO{\sqrt{n}}$ and
+$\ell = \bigO{\sqrt{n}}$. Assembling the linear system costs $\bigO{n^{2.5}}$
+while solving it costs $\bigO{n^{1.5}}$. Assembling the linear system is
+dominated by the evaluation of the quadratic polynomials. We show in
+section~\ref{sec:gray} that it is possible to decrease this cost to $\bigO{n}$.
+
+The main problem of this algorithm is that it is difficult to bound the total
+number of iterations of the solution-checking loop (step 9--11). Morally
+speaking, because the linear system $A z^t = b$ is quite overdetermined, then most
+of the time there should be no solution at all.
+
+Let us make the heuristic assumption that the $b$ vectors are uniformly random
+(in fact, they are the result of the evaluation of quadratic polynomials). The
+image of $A$ is a subspace of dimension less than or equal to $v$ in
+$\bits^\ell$, therefore it contains the random vector $b$ with probability less
+than $2^{v-\ell}$. When the linear system is consistent, it has at most $2^v$
+solutions. This yields a crude upper-bound on the expected number of solutions
+$N$ of each random linear system:
+\[
+E(N) \leq 2^v \mathrm{Pr}(\text{the linear system is consistent}) = 2^{2v - \ell} \leq 2^{-v/2}
+\]
+It follows that the total time spent checking solutions (in steps 9--11) is
+asymptotically negligible compared to the rest of the algorithm.  The total
+expected running time of the algorithm, under the heuristic assumption that the
+$b$ vectors are random, is $\bigO{n^{2.5} 2^{n - \sqrt{2m}}}$.
+
+
+\section{Practicality}
+
+This algorithm can actually be implemented and executed. Toy implementations in
+a computer algebra systems such as \textsf{SageMath} are easy to write. A
+serious, user-friendly and competitive implementation in pure C using low-level
+optimizations is about 650 lines long (it is accessible in the supplementary
+material). This is possible because the algorithm itself is simple, and because
+it does not rely on sophisticated data structures or complex sub-algorithms such
+as fast multivariate polynomial multiplication, fast multipoint
+evaluation/interpolation, Groebner basis computations or large sparse linear
+system solvers. In addition, its space complexity is negligible and it is
+trivially parallelizable.
+
+This section discusses what is needed to assemble a serious implementation.
+
+\subsection{Faster Polynomial Enumeration Using a Gray Code}
+\label{sec:gray}
+
+As discussed in section~\ref{sec:description}, the running time of the algorithm
+is dominated by the need to evaluate quadratic polynomials (step 6 of
+algorithm~\ref{the-algo}). Evaluating a quadratic polynomial on
+$\hat y \in \bits^u$ naively requires $\bigO{u^2}$ operations. This can be
+reduced by enumerating all values of $\hat y$ using a \emph{Gray code}, so that only a
+single bit of $\hat y$ changes at each iteration. This technique seems to belong
+to the folklore. The point is that once the value of $q_i(\hat y)$ is known,
+only the monomials that depend on the flipped variable must be reevaluated, and
+there are only $u$.
+
+Consider an arbitrary quadratic polynomial $\displaystyle f(x) = c + \sum_{i=1}^u \sum_{j=1}^u M[i,j] y_i y_j$.
+
+Observe that $f(x + y) = f(x) + f(y) + x \left(M + M^t\right)y^t + f(0)$. Let
+$\hat e_k \in \bits^u$ denote the vector which is zero everywhere except on the
+$k$-th coordinate.  Define the partial ``derivative'' of $f$ with respect to its
+$k$-th variable as:
+\[
+\frac{\partial f}{\partial k}(y) = f(y) + f(y + \hat e_k).
+\]
+Using the above observation, one quickly find that:
+\[
+\frac{\partial f}{\partial k}(y) = M[k,k] + \sum_{i=1}^u (M[i,k] + M[k, i]) y_i.
+\]
+
+This suggests the following rearrangement of algorithm~\ref{the-algo}:
+
+\begin{algorithmic}[1]
+  \State $\hat y \gets 0$ \Comment{Setup $\hat y$, $A$ and $b$}
+  \For{$1 \leq i \leq \ell$}
+  \State $b[i] \gets  q_i(0)$
+  \State $A[i, \cdot] \gets C_i$
+  \EndFor
+  \For{$1 \leq i \leq 2^u$} \Comment{Main loop}
+  \State Solve the linear system $Az^t = b$ and process its solution as before
+  \State $k \gets $ index of the rightmost bit of $i$ \Comment{Update $\hat y$}
+  \State $\hat y \gets \hat y + \hat e_k$
+  \For{$1 \leq i \leq \ell$} \Comment{Update $A$ and $b$}
+  \State $b[i] \gets b[i] + \frac{\partial q_i}{\partial k}(\hat y)$
+  \State $A[i, \cdot] \gets A[i, \cdot] + B_i[k, \cdot]$
+  \EndFor
+  \EndFor
+\end{algorithmic}
+
+Maintaining $A$ and $b$ consistent with the single-bit updates to $\hat y$ now
+requires $\bigO{u}$ operations on step 10 and $\bigO{v}$ operations on step
+11, respectively. All in-all, the total cost of assembling the linear system has dropped from
+$\bigO{n^{2.5}}$ to $\bigO{n^{1.5}}$, and it now matches that of solving it.
+
+This can again be improved a little by observing that each individual ``partial
+derivative'' is evaluated on related inputs (only two bits differ from one
+evaluation to the next). Taking advantage of this observation leads to the fast
+exhaustive search algorithm of Bouillaguet, Chen, Cheng, Chou, Niederhagen,
+Shamir and Yang~\cite{BouillaguetCCCNSY10}. Using this technique allows to
+update each $b[i]$ in constant time, and brings down the total time needed to
+update $A$ and $b$ to $\bigO{n}$.
+
+\subsection{Simplifying the Linear Algebra}
+
+Implementing these algorithmic optimizations result in a program that spends all
+its time examining a large number of very small overdetermined linear systems
+modulo 2 (say, of size $20 \times 10$). Optimizing the linear algebra is
+therefore the next step. The overwhelming majority of the linear systems will
+have full rank and be inconsistent. Therefore, it makes sense to process them in
+two phases:
+\begin{enumerate}
+  \item Check whether the linear system is both full-rank and inconsistent. If
+  this is the case, move on to the next system. This is performance-critical.
+  \item Otherwise, we actually need to compute a particular solution, or even
+  possibly a basis of the solution space. This is a rare occurrence, so
+  performance is not critical.
+\end{enumerate}
+
+%\medskip
+We now argue that the second phase is (heuristically) rarely invoked.  As argued
+in section~\ref{sec:description}, each linear system $Az^t = b$ is consistent
+with probability less than $2^{-3v/2}$ (under the heuristic assumption that $b$
+is random). We now crudely lower-bound the probability that a random
+$\ell \times v$ matrix is full rank. This happens when each column is chosen out
+of the linear span of the previous columns, and the probability of this event
+is:
+\[
+p := \prod_{j=\ell-v+1}^\ell \left(1 - 2^{-j} \right)
+\]
+This is always greater than $\left(1 - 2^{v-\ell} \right)^v$. Let $e$ denote the
+\emph{excess ratio} $e := \ell/v - 1$. Because we always have $\ell \geq 2v$,
+then $e \geq 1$. This implies that $p \geq \left(1 - 2^{-ev} \right)^v$. Taking
+an asymptotic expansion for $v \rightarrow +\infty$ shows that this is
+$1 - v 2^{-ev} + \bigO{v^2 2^{-2ev}}$. Therefore, we expect the proportion of
+rank-defective linear systems to be smaller than $v 2^{v-\ell}$. In practice,
+this holds quite well.
+
+\subsection{Vectorization}
+
+\emph{Vectorization} is a key implementation technique to obtain competitive
+performance on contemporary hardware, leading to a constant speedup of about
+$40 \times$.
+
+Consider a Boolean circuit $\mathcal{C}$ with $(\ell+1)v$ input wires for $A$
+and $b$ as well as $v$ output wires for $z$ and two extra output wires $c$ and
+$d$. The $c$ output wire indicates whether the linear system $A z^t = b$ is
+\emph{consistent} while the $d$ output wire indicates whether the matrix $A$ is
+\emph{rank-defective}.
+
+The point is that on a CPU equipped with $w$-bit registers, $w$ copies of the
+circuit can be evaluated in parallel on $w$ distinct inputs by performing normal
+Boolean operations between registers (the $i$-th copy operates on the $i$-th bit
+of all $w$-bit values). Most current \textsf{x86-64} CPUs have \textsf{AVX2}
+instructions, which allows to perform Boolean operations on 256-bit registers.
+
+This allows to group the iterations of the main loop of the algorithm in batches
+of size $w$. The most common situation is that all linear systems are full-rank
+and inconsistent (which results in $d \vee c = 0000 \dots 000$). In this case,
+there is nothing to do except moving on to the next batch. Otherwise, the
+individual elements of the batch must be examined, but this is a rare occurrence.
+
+Such a Boolean circuit is not difficult to obtain, as this amounts to perform an
+LU factorization of $A$ with partial pivoting.  We actually use the following
+relaxed specification: if $d=1$ (the system does not have full-rank), then the
+other outputs are unspecified. If $d=0$ and $c=0$, then the system is
+inconsistent ; lastly, if $d=0$ and $c=1$ then the only solution of the system
+can be read on the $z$ wires. Giving up on producing a meaningful result when
+the system is rank-defective allows several simplifications that reduce the size
+of the circuit. Actually obtaining the solution $z$ when the system is
+consistent has negligible cost. The circuit we use has approximately $3\ell v^2$
+gates.
+
+\subsection{Comparison with exhaustive search}
+
+The wall-clock running time of fast software implementations of exhaustive
+search is $T = \alpha 2^n$, for some constant $\alpha$ which depends on the
+implementation and on the machine. The running time of this algorithm presented
+in this paper is $T' = P(m) 2^{n - 2\sqrt{m}}$, for some polynomial $P$ that
+also depends on the machine. An implementation of our algorithm ``beats brute
+force'' when $T/T' > 1$, in other terms when
+$\alpha 2^{\sqrt{2m}} > P(m)$. This always happens for sufficiently large
+$m$, \textit{i.e.} if there are sufficiently many equations, regardless of the
+number of variables.
+
+We use the exhaustive search implementation in \textsf{libfes-lite} for
+comparison. Determining the threshold $m$ such that both programs take the same
+time is a simple matter ; using a single core on the recent laptop of one of the
+authors, we found that it is $m=48$, which we consider to be rather low. In that
+case, both program take about two hours to run.
+
+Solving a random system of 512 quadratic equations in 64 variables takes less
+than 15 minutes on a laptop using this algorithm (using a single core) ; it
+would take 16 years using exhaustive search.
+
+
+\section{Making it complicated with Higher-Degree Multiples}
+\label{sec:extensions}
+
+
+Our simple algorithm exploits the well-known property that a quadratic polynomial system can be solved in polynomial time by linearization when $m \geq n(n+1)/2$.
+By guessing variables, we decrease the value of $n$ until we obtain this ratio. A contrasting idea is to increase the value of $m$ by adding new polynomials of the form $uf_i$ where $u$ is a monomial in $\mathcal{B}[x_1, \dots, x_n]$.
+Note that when we add these multiples, the degree of the system grows and as a result, the total number of monomials in the system grows as well. The lowest degree at which we achieve the required ratio to solve the system through linearization is called the \textit{degree of regularity}. This method is used in almost all state-of-the-art algorithms for solving multivariate polynomial systems~\cite{F4,F5,CourtoisKPS00,BardetFSS13,JouxV17}. 
+
+In this section, we explore how the common method of using higher-degree multiples can be used to extend this algorithm following two different axes.
+%
+One of them leads to the \textsf{Crossbred} algorithm~\cite{JouxV17}, the other
+one gives a simple algorithm which, as far as we know, has not been described
+in the literature yet.
+
+
+\subsection{The \textsf{Crossbred} algorithm}\label{sec:JV}
+
+The general idea of \textsf{Crossbred} algorithm can be described as follows.
+Given a set of $m$ quadratic polynomials $f_i$ in $n$ variables over $\mathbb{F}_2$, 
+and $D \geq 2$, the first step consists in
+increasing the size of the initial system by multiplying each of the $f_i$
+polynomials by monomials of degree less than or equal to $D-2$ 
+(i.e. construct the Macaulay matrix of degree $D$).
+Then, consider the linear space spanned 
+by these polynomials $f_1, \dots, f_m, x_1f_1, \dots x_{n-(D-1)}\dots x_{n}f_m$. 
+We denote by $\mathcal{V}$ its subspace where all the coefficients of all 
+monomials of degree $D -2$ are equal to zero. Similar to what has been 
+described in Section~\ref{sec:description}, a basis $g_1, \dots, g_\ell$ of
+$\mathcal{V}$ is easily computed via linear algebra. Once again, the set of variables
+is split in two subsets of size $u$ and $v$ such that when the values $y_1, \dots, y_u$
+are fixed, the $g_i$ polynomials become linear and only depend on $z_1, \dots, z_v$.
+The algorithm enumerates all possible $y_1, \dots, y_u$, solves the smaller system in the $z_i$
+variables and checks whether the solution is consistent.
+
+It is trivial to see that in the case $D=2$ this is the same as Algorithm~\ref{the-algo}.
+Let us see what happens in the case $D=3$. The first step consists in multiplying each of
+the $m$ initial polynomials by every variables $x_i$. This will lead to a total of
+$m(n+1)$ polynomials in the new system (i.e. $m$ polynomials of degree 2 and $nm$ polynomials
+of degree 3). Then, we need to guess $u$ variables $y_1, \dots, y_u$ so that the remaining system
+is linear in $z$. This gives us nine different types of monomials:
+$y_i, z_k, y_iy_j, y_iz_k, z_jz_k, y_iy_jy_k, y_iy_jz_k, y_iz_jz_k$ and $z_iz_jz_k$.
+In order to have at least $v$ equations linear in the $z_i$ variables once the values of $y_1, \dots, y_u$
+are fixed, we have to eliminate terms of degree 2 and 3 in $z$ first. In other words,
+we need to eliminate the $z_jz_k, y_iz_jz_k, z_iz_jz_k$ monomials using at most $m(n+1) - v$ equations
+using linear algebra. The number of monomials that have to be eliminate is given by:
+\[
+\#\{z_iz_j\} + \#\{y_iz_iz_j\} +\#\{z_iz_jz_k\}
+= \binom{v}{2} + (n-v)\binom{v}{2} +\binom{v}{3}.
+\]
+Thus, in order to estimate $v$, we need to solve:
+\[
+m(n+1) -v = (n-v +1)\binom{v}{2} + \binom{v}{3}.
+\]
+The solution to this equation is not easy to express in function of $n$ and $m$, but a quick
+numerical simulation can easily check that for $m=n$, $v/\sqrt{2m} = 1+\epsilon$. Furthermore,
+the limit of $v/\sqrt{2m}$ equals 1 as $n$ grows toward the infinity. Although it does not seems
+to be much better than the case $D=2$, it can lead to significant improvements in
+practice.
+
+
+
+
+% sage: # vrai JV                                                                                                             
+% sage: eqs = (n+1) * m                                                                                                         
+% sage: # vrai JV (en degré 3)                                                                                                  
+% sage: a_eliminer = binomial(v, 3) + binomial(v, 2) * (n-v+1)                                                                  
+% sage: solve(eqs == a_eliminer + v, v)                                                                                         
+% [v == -1/4*(1/3)^(2/3)*(3*(n + 1)^2 - 6*n + 10)*(-I*sqrt(3) + 1)/(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3) - 1/4*(1/3)^(1/3)*(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3)*(I*sqrt(3) + 1) + 1/2*n + 1/2, v == -1/4*(1/3)^(2/3)*(3*(n + 1)^2 - 6*n + 10)*(I*sqrt(3) + 1)/(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3) - 1/4*(1/3)^(1/3)*(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3)*(-I*sqrt(3) + 1) + 1/2*n + 1/2, v == 1/2*(1/3)^(2/3)*(3*(n + 1)^2 - 6*n + 10)/(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3) + 1/2*n + 1/2*(1/3)^(1/3)*(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3) + 1/2]
+% sage: x = -1/4*(1/3)^(2/3)*(3*(n + 1)^2 - 6*n + 10)*(-I*sqrt(3) + 1)/(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(
+% ....: -27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1
+% ....: 225/3))^(1/3) - 1/4*(1/3)^(1/3)*(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 
+% ....: 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3)*(I*sqrt(3) + 1) +
+% ....:  1/2*n + 1/2
+
+
+\subsection{Simple linearization}
+
+First, we augment the initial polynomial system by adding multiples of the form $uf_i$ with a restriction to the overall degree. As described in Section~\ref{sec:JV}, to restrict the degree to $D$, we need to consider only monomials $u$ of degree lesser than or equal to $D-2$. After we obtain the augmented system, we proceed as before: guess sufficiently many variables so that the remaining polynomial system can be solved by linearization. 
+
+The parameter $v$ is again chosen as the highest value where the number of monomials is lesser than or equal to the number of equations. The number of monomials is easily computed by: $\sum_{i=1}^{D}\binom{n}{i}$. However, estimating the number of equations is not as straightforward, as we need to take into account the number of multiples that will give trivially dependent linear equations. For instance, when we restrict the degree to three, we can create at most $mn$ multiples of degree three, which gives us a total of $m(n+1)$ equations in the system. However multiples of the form $y_jf_i$ are not useful, as once the values $y_1,\dots y_u$ are fixed, $y_jf_i$ is equal to either 0 or $f_i$. Thus, the number of equations in the augmented system, when $D=3$ is $m(v+1)$, and the system can be solved through linearization when $m(v+1) \geq v(v^2+5)/2$. We approximate the choice of $v$ to $\left\lfloor \sqrt{6m} \right\rfloor$.
+Note that this value is an upper-bound. In practice it is possible that monomials get canceled out
+leading to equations that are (not trivially) linearly dependent. However, we experimented with small
+parameters and found out that, on systems that are randomly created, the actual value of $v$ does not
+differ much from this bound. 
+For the case $D=4$, similarly, we only consider multiples of the form 
+$z_jz_kf_i$ to be useful, which allows us to create $v(v+1)/2$ new equations. 
+However, there are also relations of the form $f_if_j + f_jf_i=0$ and $(f_i+1)f_i=0$ 
+that result in trivially dependent equations. 
+%Thus, the total number of equations is $m(v(v+1)/2+1)-m(m+1)/2$ and we choose $v$ such that $m(v(v+1)/2+1)-m(m+1)/2 \geq (v^4-2v^3+11v^2+14v)/24$. \TODO{simplifier et/ou approximer}. Note that these values are upper-bounds. In practice, we can have monomials that get cancelled out and equations that are (not trivially) linearly dependent. However, we experimented with small parameters for the $D=3$ case and found that, on systems that are randomly created, with one planted solution, the obtained values do not differ enough from the upper-bound to change the estimate of $v$. 
+As a result, for $D > 4$, estimating the number of equations is more complicated. As the degree grows, the dimension of polynomials in the polynomial ring $\mathcal{B}[x_1, \dots, x_n]$ that are not in the ideal generated by $\{f_1, \dots, f_m\}$ becomes smaller (see Hilbert Function~\cite{Ideals_varieties_algos}), and thus, we obtain more and more trivial relations.
+
+
+This approach of considering higher-degree multiples yields higher values of $v$, which results in having to guess less variables before linearization. In contrast, the Gaussian elimination is done on a bigger linear system. This suggests that using higher degrees gives a better asymptotic complexity, but is not more efficient for practical parameters. Since the goal of this paper is to give a simple algorithm that is practically efficient, we do not use higher-degree multiples in our implementation. This extension and its further analysis will be left for future work. 
+
+
+
+\bibliography{biblio}
+
 \end{document}
 
 %%% Local Variables:
