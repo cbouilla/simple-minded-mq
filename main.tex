@@ -41,8 +41,12 @@
 \ccsdesc[100]{Theory of computation~Design and analysis of algorithms}% Please choose ACM 2012 classifications from https://dl.acm.org/ccs/ccs_flat.cfm 
 
 \keywords{Boolean quadratic polynomials, exhaustive search, linear algebra}
+
 \supplement{Source code available at : \url{https://gitlab.lip6.fr/almasty/moebius/}}
-\funding{We acknowledge financial support from the Agence Nationale de Recherche under project ANR20-ASTR-0011.}
+
+\funding{We acknowledge financial support from the Agence Nationale de Recherche
+  under projects ``PostCryptum'' (ANR20-ASTR-0011) and ``GORILLA''
+  (ANR-20-CE39-0002).}
 
 \hideLIPIcs
 \nolinenumbers
@@ -87,29 +91,32 @@ $x^2 = x$ modulo 2, we assume that the exponent of each variable is either 0 or
 
 It is well-known that the problem is NP-complete, with a simple reduction from
 SAT. It is relevant to the cryptology community because its hardness can be used
-to build ``post-quantum'' encryption or signature schemes. Many have been
-proposed with concrete sets of parameters, such as HFE~\cite{Patarin96},
-UOV~\cite{KipnisPG99}, MQDSS~\cite{ChenHRSS16} and variants thereof. Several
-have been submitted to the ongoing competition launched in 2017 by the
-(American) National Institute of Standards and Technology in order to select a
-portfolio of ``post-quantum'' public-key cryptographic algorithms. For instance,
-among these, the \textsf{GeMSS} signature scheme exposes a public key consisting
-of $m=162$ Boolean quadratic polynomials in $n=192$ variables. It follows that
-the relevant range of parameters for cryptographic instances is essentially
-$m \approx n$ and $n \approx 200$ at this point: solving quadratic Boolean
-systems of this size is assumed to be intractable (much smaller systems seem
-practically out of reach as well). Note that in the context of cryptology, the
-average case complexity is more relevant than the worst case, because
-cryptographic instances of the problem are (presumably indistinguishable from)
-random. In addition, there is empirical evidence that random systems are hard to
-solve. The algorithmic problem is thus both of theoretical and of practical
-interest, and many algorithms have been proposed to solve it.
+to build ``post-quantum'' encryption or signature schemes, as there are no known
+quantum algorithms capable of solving an NP-complete problem in polynomial
+time. Many such cryptographic schemes have been proposed with concrete sets of
+parameters, such as HFE~\cite{Patarin96}, UOV~\cite{KipnisPG99},
+MQDSS~\cite{ChenHRSS16} and variants thereof. Several have been submitted to the
+ongoing competition launched in 2017 by the (American) National Institute of
+Standards and Technology in order to select a portfolio of ``post-quantum''
+public-key cryptographic algorithms. For instance, among these, the
+\textsf{GeMSS} signature scheme exposes a public key consisting of $m=162$
+Boolean quadratic polynomials in $n=192$ variables. It follows that the relevant
+range of parameters for cryptographic instances is essentially $m \approx n$ and
+$n \approx 200$ at this point: solving quadratic Boolean systems of this size is
+assumed to be intractable (much smaller systems seem practically out of reach as
+well). Note that in the context of cryptology, the average case complexity is
+more relevant than the worst case, because cryptographic instances of the
+problem are (presumably indistinguishable from) random. In addition, there is
+empirical evidence that random systems are hard to solve. The algorithmic
+problem is thus both of theoretical and of practical interest, and many
+algorithms have been proposed to solve it.
 
 In this paper, we present a \emph{decremental} improvement over the
-state-of-the-art: a simple deterministic algorithm, which is essentially a
-special of exponentially better techniques. It (only) achieves a sub-exponential
-advantage over exhaustive search in the average case, but it is extremely simple
-and quite easy to implement efficiently. The algorithm works as follows:
+state-of-the-art: a simple deterministic algorithm that 1) is a special case of
+known techniques, and 2) has exponentially worse complexity. It only achieves a
+sub-exponential advantage over exhaustive search in the average case, but it is
+extremely simple and quite easy to implement efficiently. The algorithm works as
+follows:
 
 \begin{framed}
   Guess sufficiently many variables so that the remaining polynomial system can
@@ -295,36 +302,11 @@ de & d & e & 1 & \\
 \end{block}
 \end{blockarray}
 \end{equation}
-More precisely,
-the columns corresponding to quadratic (resp. linear, constant) monomials in
-$d,e$ contain constant (resp. linear, quadratic) terms in $a,b,c$. % Any solution
-% to the initial polynomial system is also a solution of the following linear system:
-% \begin{equation}
-%   \label{eq:example_system}
-%   \underbrace{\begin{pmatrix}
-%   0 & c+1   & a+b+1 \\
-%   1 & a+b+1 & a+c   \\
-%   0 & a+c+1 & b     \\
-%   0 & a+b+1 & b+1   \\
-%   1 & b+c   & a+c+1 \\
-%     \end{pmatrix}}_{L(a,b,c)}
-%   \begin{pmatrix}
-%     de \\
-%     d \\
-%     e\\
-%   \end{pmatrix}
-%   =
-%   \underbrace{\begin{pmatrix}
-%   bc + a + 1 \\
-%   ac +bc + a+b \\
-%   a+b+1 \\
-%   ab+b \\
-%   ab+bc+a+1 \\
-% \end{pmatrix}}_{Q(a,b,c)}
-% \end{equation}
 
-Perform linear combinations of the rows to put the columns corresponding to
-quadratic terms in reduced row echelon form :
+The columns corresponding to quadratic (resp. linear, constant) monomials in
+$d,e$ contain constant (resp. linear, quadratic) terms in $a,b,c$. Perform
+linear combinations of the rows to put the columns corresponding to quadratic
+terms in reduced row echelon form :
 \[
 \widetilde M(a,b) = \begin{blockarray}{ccccc}
 de & d & e & 1 & \\
@@ -378,7 +360,7 @@ solution is indeed a valid satisfying assignment.
   \begin{algorithmic}[1]
     \State Let $A$ denote a $\ell \times v$ matrix of bits and $b$ a size-$\ell$
     vector of bits
-    \State Compute a basis $g_1, \dots, g_\ell$ of $\mathcal{V}$
+    \State Compute a basis $g_1, \dots, g_\ell$ of $\mathcal{L}$
     \State Write $g_i(y, z) = q_i(y) + y\cdot B_i \cdot z^t + C_i \cdot z^t$
     \For{$\hat y \in \bits^u$}
     
@@ -421,36 +403,23 @@ $u$ variables, and solve the remaining system by linearization. In fact, we
 present below a slight algorithmic refinement which, in our opinion, leads to a
 simpler formal exposition.
 
-% The second step of our simple algorithm consists in solving the linearized
-% system of equations. The most straightforward method is to perform a Gaussian
-% elimination on the entire system. Since Gaussian elimination has a significant
-% computational cost and our choice of $v$ ensures that system is overdetermined,
-% it can be beneficial to consider only a subset of the system, find its solution
-% and then, check whether the solution is consistent with the original
-% system. Choosing the size and composition of this subset introduces a trade-off
-% between the cost of the Gaussian elimination and the number of solutions to
-% check. We present here a choice that both allows for a simple formal
-% description, and is standard in the literature~\cite{--,JouxV17}. \TODO{rajouter
-%   citation d'autres algos qui utilisent cette méthode}
-
 The ring of Boolean polynomials is in particular a vector space. Denote by
-$\mathcal{U}$ the subspace where the coefficient of all monomials of the form
-$z_i z_j$ is equal to zero. Consider the subspace spanned by the input
-polynomials $\left\langle f_1, \dots, f_m\right\rangle$ and let $\mathcal{V}$
-denote its intersection with $\mathcal{U}$. In other terms, $\mathcal{V}$
-contains the linear combinations of the input polynomials where the quadratic
-monomials in $z$ have vanished. The point is that once the values of the
-$y_1, \dots, y_u$ variables are fixed, then polynomials in $\mathcal{V}$ depend
-only on $z_1, \dots, z_v$ and they have degree one because their quadratic
-monomials are absent.
+$\mathcal{Z}$ the subspace formed by the monomials that contain at most one
+variable from $z$. Now, consider the linear span of the input polynomials
+$\left\langle f_1, \dots, f_m\right\rangle$ and let $\mathcal{L}$ denote its
+intersection with $\mathcal{Z}$. In other terms, $\mathcal{L}$ contains the
+linear combinations of the input polynomials in which all monomials contain at
+most one $z_i$. The point is that once the values of the $y_1, \dots, y_u$
+variables are fixed, then polynomials in $\mathcal{L}$ depend only on
+$z_1, \dots, z_v$ and they have degree at most one.
 
-Computing a basis $g_1, \dots, g_\ell$ of $\mathcal{V}$ is easy: this can be
+Computing a basis $g_1, \dots, g_\ell$ of $\mathcal{L}$ is easy: this can be
 done by putting the original polynomials in reduced row echelon form with a
-suitable choice of pivots. The algorithm works by enumerating all possible
-$\hat y \in \bits^u$, solving $g_1(\hat y, z) = \dots = g_\ell(\hat y, z) = 0$,
-which is a linear system in $z$, then checking each candidate solution
-$(\hat y, \hat z)$ against the original system. This is shown in
-Algorithm~\ref{the-algo}.
+suitable choice of pivots to eliminate the ``bad'' monomials $z_i z_j$. The
+algorithm works by enumerating all possible $\hat y \in \bits^u$, solving
+$g_1(\hat y, z) = \dots = g_\ell(\hat y, z) = 0$, which is a linear system in
+$z$, then checking each candidate solution $(\hat y, \hat z)$ against the
+original quadratic polynomials. This is shown in Algorithm~\ref{the-algo}.
 
 We write each $g_i$ as $g_i(y, z) = q_i(y) + y B_i z^t + C_i z^t$, where $q_i$
 is a quadratic polynomial in $\mathcal{B}[y]$, $B_i$ is a $u \times v$ matrix
@@ -459,8 +428,9 @@ coefficients in $\mathbb{F}_2$. This amounts to distinguish monomials that
 depend only on $y$, are bilinear in $(y, z)$ or linear in $z$, respectively.
 
 Assuming that the input polynomials are linearly independent (which seems a mild
-assumption), then the subspace $\mathcal{V}$ has dimension
-$\ell = m - v(v-1)/2$. Our choice of $v$ guarantees that $\ell \geq 5v/2$.
+assumption), then the intersection $\mathcal{L}$ has dimension greater than or
+equal to $\ell = m - v(v-1)/2$. Our choice of $v$ guarantees that
+$\ell \geq 5v/2$.
 
 Assembling the linear system (steps 5--7) requires evaluating the $\ell$
 quadratic polynomials $q_i$'s in $u$ variables and performing $\ell$
@@ -499,7 +469,7 @@ $b$ vectors are random, is $\bigO{n^{2.5} 2^{n - \sqrt{2m}}}$.
 
 This algorithm can actually be implemented and executed. Toy implementations in
 a computer algebra systems such as \textsf{SageMath} are easy to write. A
-serious, user-friendly and competitive implementation in pure C using low-level
+user-friendly and competitive implementation in pure C using low-level
 optimizations is about 650 lines long (it is accessible in the supplementary
 material). This is possible because the algorithm itself is simple, and because
 it does not rely on sophisticated data structures or complex sub-algorithms such
@@ -597,8 +567,8 @@ is:
 p := \prod_{j=\ell-v+1}^\ell \left(1 - 2^{-j} \right)
 \]
 This is always greater than $\left(1 - 2^{v-\ell} \right)^v$. Let $e$ denote the
-\emph{excess ratio} $e := \ell/v - 1$. Because we always have $\ell \geq 2v$,
-then $e \geq 1$. This implies that $p \geq \left(1 - 2^{-ev} \right)^v$. Taking
+\emph{excess ratio} $e := \ell/v - 1$. Because we always have $\ell \geq 5v/2$,
+then $e \geq 3/2$. This implies that $p \geq \left(1 - 2^{-ev} \right)^v$. Taking
 an asymptotic expansion for $v \rightarrow +\infty$ shows that this is
 $1 - v 2^{-ev} + \bigO{v^2 2^{-2ev}}$. Therefore, we expect the proportion of
 rank-defective linear systems to be smaller than $v 2^{v-\ell}$. In practice,
@@ -643,13 +613,12 @@ gates.
 
 The wall-clock running time of fast software implementations of exhaustive
 search is $T = \alpha 2^n$, for some constant $\alpha$ which depends on the
-implementation and on the machine. The running time of this algorithm presented
-in this paper is $T' = P(m) 2^{n - 2\sqrt{m}}$, for some polynomial $P$ that
-also depends on the machine. An implementation of our algorithm ``beats brute
-force'' when $T/T' > 1$, in other terms when
-$\alpha 2^{\sqrt{2m}} > P(m)$. This always happens for sufficiently large
-$m$, \textit{i.e.} if there are sufficiently many equations, regardless of the
-number of variables.
+implementation and on the machine. The running time of Algorithm~\ref{the-algo}
+is $T' = P(m) 2^{n - 2\sqrt{m}}$, for some polynomial $P$ that also depends on
+the machine. An implementation of our algorithm ``beats brute force'' when
+$T/T' > 1$, in other terms when $\alpha 2^{\sqrt{2m}} > P(m)$. This always
+happens for sufficiently large $m$, \textit{i.e.} if there are sufficiently many
+equations, regardless of the number of variables.
 
 We use the exhaustive search implementation in \textsf{libfes-lite} for
 comparison. Determining the threshold $m$ such that both programs take the same
@@ -658,8 +627,8 @@ authors, we found that it is $m=48$, which we consider to be rather low. In that
 case, both program take about two hours to run.
 
 Solving a random system of 512 quadratic equations in 64 variables takes less
-than 15 minutes on a laptop using this algorithm (using a single core) ; it
-would take 16 years using exhaustive search.
+than 15 minutes on a laptop using Algorithm~\ref{the-algo} ; it would take 16
+years using exhaustive search.
 
 
 \section{Making it complicated with Higher-Degree Multiples}
@@ -668,111 +637,153 @@ would take 16 years using exhaustive search.
 This simple algorithm exploits the well-known idea that a polynomial system can
 be solved in polynomial time by linearization when the number of (linearly
 independent) equations exceeds the number of non-constant monomials that appear
-in them.
+in them. The number of non-constant monomials of degree $\leq D$ in $n$
+variables is $N_D(n) = \sum_{i=1}^D \binom{n}{i}$. A degree-$D$ Boolean system
+with $m$ (linearly independent) polynomials can be linearized when
+$m \geq N_D(n)$. By guessing variables, we decrease the value of $n$ until this
+``linearization condition'' is satisfied.
 
-The number of non-constant monomials of degree $\leq D$ in $n$ variables is
-$N_d(n) = \sum_{i=1}^D \binom{n}{i}$. A degree-$D$ Boolean system can be
-linearized when $m \geq N_d(n)$. In general, if the system is not overdetermined
-enough, then this ``linearization condition'' is not met. By guessing variables,
-we decrease the value of $n$ until the linearization condition is satisfied. A
-contrasting idea is to increase the value of $m$ by adding new polynomials of
-the form $uf_i$ where $u$ is a monomial in $\mathbb{F}_2[x_1, \dots, x_n]$.
-Note that when we add these multiples, the degree of the system grows and as a
-result, the total number of monomials in the system grows as well. The lowest
-degree at which we achieve the required ratio to solve the system through
-linearization is called the \textit{degree of regularity}. This method is used
-in almost all state-of-the-art algorithms for solving multivariate polynomial
-systems~\cite{F4,F5,CourtoisKPS00,BardetFSS13,JouxV17}.
-
-In this section, we explore how the common method of using higher-degree multiples can be used to extend this algorithm following two different axes.
-%
-One of them leads to the \textsf{Crossbred} algorithm~\cite{JouxV17}, the other
-one gives a simple algorithm which, as far as we know, has not been described
-in the literature yet.
-
-%Let $\Omega_{n,d}$ denote the vector space containing all Boolean polynomials of degree at most $d$.
+A contrasting idea consists in increasing the number of linearly independent
+polynomial equations.  Any polynomial contained in the ideal
+$I = \left\langle f_1, \dots, f_m\right\rangle$ can indeed by appended to the
+original equations system without altering its set of solutions. Seen as a
+vector space, $I$ is spanned by the $t f_i$, where $t$ ranges across all
+possible monomials and $1 \leq i \leq m$. Note that when we add these
+``multiples'' of the original polynomials, the degree of the system grows and as
+a result, the total number of monomials in the system grows as well.
 
 
-\subsection{The \textsf{Crossbred} algorithm}\label{sec:JV}
+A problem is that the $t f_i$ are not linearly independent, if only because of
+the trivial relations $f_i f_j + f_j f_i = 0$ and $f_i (f_i + 1) = 0$, not to
+mention that there are $m 2^n$ such multiples while $\mathcal{B}[x]$ has
+dimension only $2^n$.
 
-The general idea of \textsf{Crossbred} algorithm can be described as follows.
-Given a set of $m$ quadratic polynomials $f_i$ in $n$ variables over $\mathbb{F}_2$, 
-and $D \geq 2$, the first step consists in
-increasing the size of the initial system by multiplying each of the $f_i$
-polynomials by monomials of degree less than or equal to $D-2$ 
-(i.e. construct the Macaulay matrix of degree $D$).
-Then, consider the linear space spanned 
-by these polynomials $f_1, \dots, f_m, x_1f_1, \dots x_{n-(D-1)}\dots x_{n}f_m$. 
-We denote by $\mathcal{V}$ its subspace where all the coefficients of all 
-monomials of degree $D -2$ are equal to zero. Similar to what has been 
-described in Section~\ref{sec:description}, a basis $g_1, \dots, g_\ell$ of
-$\mathcal{V}$ is easily computed via linear algebra. Once again, the set of variables
-is split in two subsets of size $u$ and $v$ such that when the values $y_1, \dots, y_u$
-are fixed, the $g_i$ polynomials become linear and only depend on $z_1, \dots, z_v$.
-The algorithm enumerates all possible $y_1, \dots, y_u$, solves the smaller system in the $z_i$
-variables and checks whether the solution is consistent.
+Let $I_D$ denote the vector space spanned by the $t f_i$ for all monomials $t$
+of degree less than or equal to $D-2$ and all $1 \leq i \leq m$. Generally
+speaking, we expect to have $\dim I_3 = (n+1) m$ and
+$\dim I_4 = (n^2 - m + n + 1)m/2 $, with the assumption that there are no
+surprising algebraic dependencies between the $f_i$'s except the trivial
+ones. Estimating the dimension of $I_D$ for larger $D$ is more complicated. In
+general, it depends not only on $n$ and $m$ but on the actual polynomials
+$f_1, \dots, f_m$ (it is related to the Hilbert function of the ideal,
+see~\cite{Ideals_varieties_algos}). The usual regularity and semi-regularity
+assumptions state that it is a fixed function of $n$ and $m$, at least when $D$
+is not too large. The lowest degree $D$ at which the linearization condition is
+satisfied is called the \textit{degree of regularity}.
 
-It is trivial to see that in the case $D=2$ this is the same as Algorithm~\ref{the-algo}.
-Let us see what happens in the case $D=3$. The first step consists in multiplying each of
-the $m$ initial polynomials by every variables $x_i$. This will lead to a total of
-$m(n+1)$ polynomials in the new system (i.e. $m$ polynomials of degree 2 and $nm$ polynomials
-of degree 3). Then, we need to guess $u$ variables $y_1, \dots, y_u$ so that the remaining system
-is linear in $z$. This gives us nine different types of monomials:
-$y_i, z_k, y_iy_j, y_iz_k, z_jz_k, y_iy_jy_k, y_iy_jz_k, y_iz_jz_k$ and $z_iz_jz_k$.
-In order to have at least $v$ linear equations in the $z_i$ variables once the values of $y_1, \dots, y_u$
-are fixed, we need to eliminate all the $z_jz_k, y_iz_jz_k, z_iz_jz_k$ monomials using at 
-most $m(n+1) - v$ equations. This is done using gaussian elimination. The number of monomials that 
-have to be eliminate is given by:
+\TODO{[Charles] je ne parviens pas à trouver un argument simple pour affirmer que
+  $D=n$ garantit que c'est bon, donc qu'il existe un plus petit $D \leq n$ qui
+  convient.}
+
+
+Several algorithms related to Groebner basis computation use these
+multiples~\cite{F4,F5,CourtoisKPS00,BardetFSS13,JouxV17}. This follows from the
+observation by Lazard~\cite{Lazard83} that the $t f_i$ are linearly independent
+in $\mathbb{K}[x]$ when the $f_i$ form a Groebner basis; \textit{a contrario},
+echelonizing multiples $t f_i$ of sufficiently high degree provides a way to
+compute a Groebner basis of $\{f_1, \dots, f_m\}$.
+
+In this section, we explore how the common method of using higher-degree
+multiples can be used to extend Algorithm~\ref{the-algo}. Two different
+directions naturally suggest themselves. One of them leads to the
+\textsf{Crossbred} algorithm of Joux-Vitse~\cite{JouxV17}, the other one
+essentially gives the algorithm of Lazard~\cite{Lazard83}, from which
+\textsf{XL}~\cite{CourtoisKPS00} and \textsf{BooleanSolve}~\cite{BardetFSS13}
+are derived.
+
+
+\subsection{The \textsf{Crossbred} algorithm}
+\label{sec:JV}
+
+The \textsf{Crossbred} algorithm can be described as follows. Proceed exactly as
+in section~\ref{sec:description}, but replace the original polynomials
+$f_1, \dots, f_m$ by the degree-$D$ multiples $t f_j$ where $t$ ranges across
+all monomials of degree less than or equal to $D-2$ and $1 \leq j \leq
+m$. Algorithm~\ref{the-algo} is in fact exactly the \textsf{Crossbred} algorithm
+with $D=2$, which is the simplest possible case. Computing the intersection with
+the subspace $\mathcal{Z}$ yields degree-$D$ polynomials where the
+$z_1, \dots, z_v$ variables only occur linearly.
+
+Working with higher-degree multiples enables the use of larger values of $v$,
+and therefore reduces the need to guess variables. For instance, let us see what
+happens when $D=3$. Starting from the $m$ initial polynomials, we obtain
+$(n+1)m$ (hopefully) linearly independent degree-3 multiples. To obtain a basis
+of $\mathcal{L}$, which is the intersection of the linear span of the multiples
+with $\mathcal{Z}$, we need to eliminate monomials of the form
+$z_jz_k, y_iz_jz_k$ and $z_iz_jz_k$. The number of these ``bad'' monomials is
 \[
-\#\{z_iz_j\} + \#\{y_iz_iz_j\} +\#\{z_iz_jz_k\}
-= \binom{v}{2} + (n-v)\binom{v}{2} +\binom{v}{3}.
+  \#\{z_iz_j\} + \#\{y_iz_iz_j\} +\#\{z_iz_jz_k\} = \binom{v}{2} + (n-v)\binom{v}{2} +\binom{v}{3} = v(v - 1)(3n - 2v + 1) / 6.
 \]
-Thus, in order to estimate $v$, we need to solve:
+The dimension of $\mathcal{L}$ is thus at least
+$\ell = m(n+1) - v(v - 1)(3n - 2v + 1) / 6$ and as in
+section~\ref{sec:description} we want to have $\ell \geq 5v/2$. The right value
+of $v$ is therefore the largest positive root of  :
 \[
-m(n+1) -v = (n-v +1)\binom{v}{2} + \binom{v}{3}.
+3nv^2 - 2v^3 - 3nv + 3v^2 + 14v = 6m(n+1)
 \]
-The solution to this equation is not easy to write in function of $n$ and $m$, but a quick
-numerical simulation can easily check that for $m=n$, $v/\sqrt{2m} = 1+\epsilon$. Furthermore,
-the limit of $v/\sqrt{2m}$ equals 1 as $n$ grows toward the infinity. Although it does not seems
-to be much better than the case $D=2$, it can lead to significant improvements in
-practice.
+The solutions to this cubic equation are hairy expressions of $n$ and $m$, but
+one can check that values slightly larger than $\sqrt{2m}$ are permitted. For
+instance, with $n=m=64$, $v=12$ is admissible, while the original presentation
+of Algorithm~\ref{the-algo} needs $v \leq 8$. However, when $n \approx m$ and
+$n \rightarrow +\infty$, the cubic equation essentially becomes $3nv^2 = 6mn$
+and the value of $v$ converges towards $\sqrt{2m}$.
+
+Extensions to higher degree are possible, but both the analysis and the
+implementation becomes more complicated. Joux and Vitse used $D=4$ to solve a
+random system with $n=74$ and $m=148$, a computational record. Larger values of
+$D$ require sparse linear algebra on matrices of size $\bigO{n^D}$, which
+quickly become complex.
 
 
+\subsection{The \textsf{BooleanSolve} and \textsf{XL} Algorithms}
 
+Lastly, we consider a different way to extend Algorithm~\ref{the-algo} with
+higher-degree multiples: solving the higher-degree system by plain
+linearization.
 
-% sage: # vrai JV                                                                                                             
-% sage: eqs = (n+1) * m                                                                                                         
-% sage: # vrai JV (en degré 3)                                                                                                  
-% sage: a_eliminer = binomial(v, 3) + binomial(v, 2) * (n-v+1)                                                                  
-% sage: solve(eqs == a_eliminer + v, v)                                                                                         
-% [v == -1/4*(1/3)^(2/3)*(3*(n + 1)^2 - 6*n + 10)*(-I*sqrt(3) + 1)/(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3) - 1/4*(1/3)^(1/3)*(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3)*(I*sqrt(3) + 1) + 1/2*n + 1/2, v == -1/4*(1/3)^(2/3)*(3*(n + 1)^2 - 6*n + 10)*(I*sqrt(3) + 1)/(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3) - 1/4*(1/3)^(1/3)*(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3)*(-I*sqrt(3) + 1) + 1/2*n + 1/2, v == 1/2*(1/3)^(2/3)*(3*(n + 1)^2 - 6*n + 10)/(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3) + 1/2*n + 1/2*(1/3)^(1/3)*(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3) + 1/2]
-% sage: x = -1/4*(1/3)^(2/3)*(3*(n + 1)^2 - 6*n + 10)*(-I*sqrt(3) + 1)/(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(
-% ....: -27*(8*m + 1)*n^4 - 108*(2*m - 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1
-% ....: 225/3))^(1/3) - 1/4*(1/3)^(1/3)*(3*(n + 1)^3 - 36*m*(n + 1) - 3*(3*n - 5)*(n + 1) + sqrt(-27*(8*m + 1)*n^4 - 108*(2*m - 
-% ....: 1)*n^3 + 6*(216*m^2 - 180*m - 47)*n^2 + 1296*m^2 + 108*(24*m^2 - 22*m + 5)*n - 1296*m - 1225/3))^(1/3)*(I*sqrt(3) + 1) +
-% ....:  1/2*n + 1/2
+\begin{enumerate}
+\item Generate the degree-$D$ multiples of the form $t f_i$ where $t$ ranges
+  across all degree-$(D-2)$ monomials in $z_1, \dots, z_v$ (only).
+  
+\item Guess the value of $y_1, \dots, y_u$.
+  
+\item Solve the remaining degree-$D$ polynomial system in $z_1, \dots, z_v$ by
+  linearization.
+\end{enumerate}
 
+The \textsf{BooleanSolve} and \textsf{XL} algorithms essentially do this, with
+steps 1 and 2 in reverse order (they commute). The parameter $v$ is again chosen
+as the highest value where the linearization condition is satisfied,
+\textit{i.e.} when there are more linearly independent multiples than
+$N_D(v)$. The linearized system has size $N_D(v) = \bigO{v^D}$, and solving it
+by Gaussian elimination therefore takes time $\bigO{v^{3D}}$. This can be
+reduced a little by observing that degree-$D$ monomials in $z_1, \dots, z_v$ are
+unaffected by guessing $y_1, \dots, y_u$. They can therefore be eliminated in
+advance, before guessing any variables, by performing suitable linear
+combinations of the multiples and focusing on the remaining equations, which
+only contain monomials of degree $D-1$ in the $z_i$. Solving this subsystem
+costs $\bigO{v^{3(D-1)}}$.
 
-\subsection{Simple linearization}
+The problematic part is that the dimension of the vector space spanned by the
+multiples is difficult to compute, for reasons stated above. But the case where
+$D=3$ is easy: we can create $(v+1)m$ multiples of degree three, which we assume
+to be linearly independent, and there are $(v^2 - v + 6)(v + 1)/6$ monomials of
+degree less than 3 in $z_1, \dots, z_v$. The linearization condition is
+satisfied by $v = \lfloor \sqrt{6m} \rfloor$ in particular, a much higher value
+than what is possible with the \textsf{Crossbred} algorithm discussed above. The
+drawback is that the linear systems that have to be solved for each choice of
+$\hat y$ have size $\bigO{m}$, which is larger than the $\bigO{\sqrt{m}}$ used
+in the \textsf{Crossbred} algorithm. This yields an algorithm of complexity
+$\bigO{m^3 2^{n - \sqrt{6m}}}$.
 
-First, we augment the initial polynomial system by adding multiples of the form $uf_i$ with a restriction to the overall degree. As described in Section~\ref{sec:JV}, to restrict the degree to $D$, we need to consider only monomials $u$ of degree lesser than or equal to $D-2$. After we obtain the augmented system, we proceed as before: guess sufficiently many variables so that the remaining polynomial system can be solved by linearization. 
-
-The parameter $v$ is again chosen as the highest value where the number of monomials is lesser than or equal to the number of equations. The number of monomials is easily computed by: $\sum_{i=1}^{D}\binom{n}{i}$. However, estimating the number of equations is not as straightforward, as we need to take into account the number of multiples that will give trivially dependent linear equations. For instance, when we restrict the degree to three, we can create at most $mn$ multiples of degree three, which gives us a total of $m(n+1)$ equations in the system. However multiples of the form $y_jf_i$ are not useful, as once the values $y_1,\dots y_u$ are fixed, $y_jf_i$ is equal to either 0 or $f_i$. Thus, the number of equations in the augmented system, when $D=3$ is $m(v+1)$, and the system can be solved through linearization when $m(v+1) \geq v(v^2+5)/2$. We approximate the choice of $v$ to $\left\lfloor \sqrt{6m} \right\rfloor$.
-Note that this value is an upper-bound. In practice it is possible that monomials get canceled out
-leading to equations that are (not trivially) linearly dependent. However, we experimented with small
-parameters and found out that, on systems that are randomly created, the actual value of $v$ does not
-differ much from this bound. 
-For the case $D=4$, similarly, we only consider multiples of the form 
-$z_jz_kf_i$ to be useful, which allows us to create $v(v+1)/2$ new equations. 
-However, there are also relations of the form $f_if_j + f_jf_i=0$ and $(f_i+1)f_i=0$ 
-that result in trivially dependent equations. 
-%Thus, the total number of equations is $m(v(v+1)/2+1)-m(m+1)/2$ and we choose $v$ such that $m(v(v+1)/2+1)-m(m+1)/2 \geq (v^4-2v^3+11v^2+14v)/24$. \TODO{simplifier et/ou approximer}. Note that these values are upper-bounds. In practice, we can have monomials that get cancelled out and equations that are (not trivially) linearly dependent. However, we experimented with small parameters for the $D=3$ case and found that, on systems that are randomly created, with one planted solution, the obtained values do not differ enough from the upper-bound to change the estimate of $v$. 
-As a result, for $D > 4$, estimating the number of equations is more complicated. As the degree grows, the dimension of polynomials in the polynomial ring $\mathcal{B}[x_1, \dots, x_n]$ that are not in the ideal generated by $\{f_1, \dots, f_m\}$ becomes smaller (see Hilbert Function~\cite{Ideals_varieties_algos}), and thus, we obtain more and more trivial relations.
-
-
-This approach of considering higher-degree multiples yields higher values of $v$, which results in having to guess less variables before linearization. In contrast, the Gaussian elimination is done on a bigger linear system. This suggests that using higher degrees gives a better asymptotic complexity, but is not more efficient for practical parameters. Since the goal of this paper is to give a simple algorithm that is practically efficient, we do not use higher-degree multiples in our implementation. This extension and its further analysis will be left for future work. 
-
-
+While this complexity is asymptotically better than that of
+Algorithm~\ref{the-algo}, it seems that the concrete number of operations needed
+by this degree-3 extension is actually larger when $m \leq 200$.  This suggests
+that using higher degree multiples in this fashion gives a better asymptotic
+complexity, but is not more efficient for practical parameters. This is
+consistent with the fact that the \textsf{Crossbred} algorithm is very
+practical, while the \textsf{BooleanSolve} algorithm has not even been
+implemented.
 
 \bibliography{biblio}
 
