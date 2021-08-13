@@ -63,10 +63,9 @@
   variable and solving the resulting linear system). Under strong heuristic
   assumptions, this finds all the solutions of $m$ quadratic polynomials in $n$
   variables with $\bigOsoft{2^{n-\sqrt{2m}}}$ operations. Although the best
-  known algorithm require exponentially less operations, the present technique
-  has the advantage of being simpler to describe and easy to implement. In
-  strong contrast with the state-of-the-art, it is also quite efficient in
-  practice.
+  known algorithms require exponentially less time, the present technique has
+  the advantage of being simpler to describe and easy to implement. In strong
+  contrast with the state-of-the-art, it is also quite efficient in practice.
 \end{abstract}
 
 
@@ -137,7 +136,7 @@ to~\cite{CourtoisKPS00,BettaleFP09,JouxV17}. However, to the best of our
 knowledge, this simple form was not discussed \textit{per se}.
 
 
-\subsection{Related Work}
+\subsection*{Related Work}
 \label{sec:related}
 
 Exhaustive search is the baseline method to solve systems of Boolean quadratic
@@ -187,8 +186,9 @@ off-the-shelf computer algebra systems, notably
 breaking some cryptosystems, most notably an instance of \textsf{HFE} with
 $n=80$ variables, which turned to be spectacularly weak against Groebner basis
 computations~\cite{FaugereJ03}. Variants of these algorithms have been
-rediscovered by the crypto community under the name \textsf{XL}, notably by
-Courtois, Klimov, Patarin and Shamir~\cite{CourtoisKPS00}.
+discovered or rediscovered by the crypto community, notably under the form of
+the \textsf{XL} algorithm by Courtois, Klimov, Patarin and Shamir
+~\cite{CourtoisKPS00}.
 
 All these algorithms have exponential space complexity and existing
 implementation run into memory limitations even for a moderate number of
@@ -204,24 +204,23 @@ polynomial systems, Groebner basis computations degenerate into Gaussian
 elimination and work in polynomial time. This is the basis for the ``hybrid
 method'' which combines exhaustive search and algebraic techniques: guess the
 values of some variables, then compute a Groebner basis of the remaining system
-which has become overdetermined. Bettale, Faugère and Perret discuss the optimal
-number of variables to fix~\cite{BettaleFP09}. The \textsf{BooleanSolve}
-algorithm of Bardet, Faugère, Salvy and Spaenlehauer~\cite{BardetFSS13} is the
-best embodiment of this idea at this point, with running time
-$\bigOsoft{2^{0.792n}}$ on average, under algebraic assumptions. It guesses some
-variables, then checks if a polynomial combination of the remaining polynomials
-is equal to 1. When it is the case, then the guessed values are incorrect (by
-Hilbert's Nullstellensatz). This in turn is accomplished by deciding whether
-large sparse linear systems have a solution. The inventors of
-\textsf{BooleanSolve} claim that it is slower than exhaustive search when
-$n \leq 200$, which seems to make it practically useless. While conceptually
-simple, the algorithm is likely hard to implement because it requires a sparse
-linear system solver for exponentially large matrices. To the best of our
-knowledge, no implementations has ever been written.
-% It must be noted that
-% the algorithm which is the center of this paper is essentially a special case of
-% the hybrid method.
+which has become overdetermined.
 
+Yang and Chen~\cite{YangC04} as well as Bettale, Faugère and
+Perret~\cite{BettaleFP09} discuss the optimal number of variables to fix. The
+\textsf{BooleanSolve} algorithm of Bardet, Faugère, Salvy and
+Spaenlehauer~\cite{BardetFSS13} is the best embodiment of this idea at this
+point, with running time $\bigOsoft{2^{0.792n}}$ on average, under algebraic
+assumptions. It guesses some variables, then checks if a polynomial combination
+of the remaining polynomials is equal to 1. When it is the case, then the
+guessed values are incorrect (by Hilbert's Nullstellensatz). This in turn is
+accomplished by deciding whether large sparse linear systems have a
+solution. The inventors of \textsf{BooleanSolve} claim that it is slower than
+exhaustive search when $n \leq 200$, which seems to make it practically
+useless. While conceptually simple, the algorithm is likely hard to implement
+because it requires a sparse linear system solver for exponentially large
+matrices. To the best of our knowledge, no implementations has ever been
+written.
 
 The \textsf{Crossbred} algorithm of Joux and Vitse~\cite{JouxV17} also belongs
 to the ``guess variables then solve a linear system'' family of algorithms. Its
@@ -231,6 +230,9 @@ and $m=148$ equations, which is the current record (this would require about 150
 million CPU hours using exhaustive search). There is a public implementation
 that uses GPUs by Niederhagen, Ning and Yang~\cite{NiederhagenNY18}. This
 algorithm is discussed more in-depth in section~\ref{sec:extensions}.
+
+The simple algorithm presented in this paper is, to a large extent, a special
+case of \emph{all} the works surveyed up to this point.
 
 A completely different family of algorithms, called the ``polynomial method'' by
 Dinur, emerged in 2017 when Lokshtanov, Paturi, Tamaki, Williams and
@@ -267,8 +269,6 @@ f_3 &= ad + be + cd  + a + b + d + 1,\\
 f_4 &= ab + ad + bd + be + b + d + e,\\            
 f_5 &= ab + ae + bc + bd + cd + ce + de + a + e + 1
 \end{align*}
-
-
 
 These polynomials can be seen as vectors in the vector space spanned by all
 quadratic monomials. The system can thus be written as a matrix:
@@ -464,21 +464,32 @@ asymptotically negligible compared to the rest of the algorithm.  The total
 expected running time of the algorithm, under the heuristic assumption that the
 $b$ vectors are random, is $\bigO{n^{2.5} 2^{n - \sqrt{2m}}}$.
 
+It would be nice to drop the heuristic assumption that the $b$ vectors are
+random, but this seems difficult. At the very least, the authors of the
+\textsf{BooleanSolve} algorithm face a comparable problem and resort to
+different, albeit comparatively strong assumptions: they assume that the
+polynomial systems $\{f_1(\hat y, z), \dots, f_m(\hat y, z)\}$ only deviate from
+a generic behavior for a sufficiently small fraction of all the possible
+$\hat y$ (they call this the ``strong semi-regularity'' assumption). This
+implies in particular that the specialized systems only rarely have solutions,
+which is exactly what we need as well.
+
+
 
 \section{Practicality}
 
-This algorithm can actually be implemented and executed. Toy implementations in
-a computer algebra systems such as \textsf{SageMath} are easy to write. A
-user-friendly and competitive implementation in pure C using low-level
-optimizations is about 650 lines long (it is accessible in the supplementary
-material). This is possible because the algorithm itself is simple, and because
-it does not rely on sophisticated data structures or complex sub-algorithms such
-as fast multivariate polynomial multiplication, fast multipoint
-evaluation/interpolation, Groebner basis computations or large sparse linear
-system solvers. In addition, its space complexity is negligible and it is
+Algorithm~\ref{the-algo} can actually be implemented and executed. Toy
+implementations in a computer algebra systems such as \textsf{SageMath} are easy
+to write. A user-friendly and competitive implementation in pure C using
+low-level optimizations is about 650 lines long (it is accessible in the
+supplementary material). This is possible because the algorithm itself is
+simple, and because it does not rely on sophisticated data structures or complex
+sub-algorithms such as fast multivariate polynomial multiplication, fast
+multipoint evaluation/interpolation, Groebner basis computations or large sparse
+linear system solvers. In addition, its space complexity is negligible and it is
 trivially parallelizable.
 
-This section discusses what is needed to assemble a serious implementation.
+This section discusses what is needed to obtain a serious implementation.
 
 \subsection{Faster Polynomial Enumeration Using a Gray Code}
 \label{sec:gray}
@@ -507,8 +518,8 @@ Using the above observation, one quickly find that:
 \frac{\partial f}{\partial k}(y) = M[k,k] + \sum_{i=1}^u (M[i,k] + M[k, i]) y_i.
 \]
 
-This suggests the following rearrangement of algorithm~\ref{the-algo}:
-
+\begin{algorithm}
+  \caption{\label{rearranged} Rearrangement of Algorithm~\ref{the-algo} (incremental updates to $A$ and $b$)}
 \begin{algorithmic}[1]
   \State $\hat y \gets 0$ \Comment{Setup $\hat y$, $A$ and $b$}
   \For{$1 \leq i \leq \ell$}
@@ -525,11 +536,14 @@ This suggests the following rearrangement of algorithm~\ref{the-algo}:
   \EndFor
   \EndFor
 \end{algorithmic}
+\end{algorithm}
 
-Maintaining $A$ and $b$ consistent with the single-bit updates to $\hat y$ now
-requires $\bigO{u}$ operations on step 10 and $\bigO{v}$ operations on step
-11, respectively. All in-all, the total cost of assembling the linear system has dropped from
-$\bigO{n^{2.5}}$ to $\bigO{n^{1.5}}$, and it now matches that of solving it.
+These modifications transform Algorithm~\ref{the-algo} into
+Algorithm~\ref{rearranged}.  Maintaining $A$ and $b$ consistent with the
+single-bit updates to $\hat y$ now requires $\bigO{u}$ operations on step 10 and
+$\bigO{v}$ operations on step 11, respectively. All in-all, the total cost of
+assembling the linear system has dropped from $\bigO{n^{2.5}}$ to
+$\bigO{n^{1.5}}$, and it now matches that of solving it.
 
 This can again be improved a little by observing that each individual ``partial
 derivative'' is evaluated on related inputs (only two bits differ from one
@@ -629,24 +643,26 @@ case, both program take about two hours to run.
 Solving a random system of 512 quadratic equations in 64 variables takes less
 than 15 minutes on a laptop using Algorithm~\ref{the-algo} ; it would take 16
 years using exhaustive search.
+% The implementation of the F4 algorithm in Magma V2.23-1 solves the system in 9
+% minutes, but it requires 20GB of memory.
 
 
 \section{Making it complicated with Higher-Degree Multiples}
 \label{sec:extensions}
 
-This simple algorithm exploits the well-known idea that a polynomial system can
-be solved in polynomial time by linearization when the number of (linearly
+Algorithm~\ref{the-algo} exploits the well-known idea that a polynomial system
+can be solved in polynomial time by linearization when the number of (linearly
 independent) equations exceeds the number of non-constant monomials that appear
 in them. The number of non-constant monomials of degree $\leq D$ in $n$
 variables is $N_D(n) = \sum_{i=1}^D \binom{n}{i}$. A degree-$D$ Boolean system
-with $m$ (linearly independent) polynomials can be linearized when
+with $m$ linearly independent polynomials can be linearized when
 $m \geq N_D(n)$. By guessing variables, we decrease the value of $n$ until this
 ``linearization condition'' is satisfied.
 
 A contrasting idea consists in increasing the number of linearly independent
 polynomial equations.  Any polynomial contained in the ideal
 $I = \left\langle f_1, \dots, f_m\right\rangle$ can indeed by appended to the
-original equations system without altering its set of solutions. Seen as a
+original equation system without altering its set of solutions. Seen as a
 vector space, $I$ is spanned by the $t f_i$, where $t$ ranges across all
 possible monomials and $1 \leq i \leq m$. Note that when we add these
 ``multiples'' of the original polynomials, the degree of the system grows and as
@@ -655,49 +671,42 @@ a result, the total number of monomials in the system grows as well.
 
 A problem is that the $t f_i$ are not linearly independent, if only because of
 the trivial relations $f_i f_j + f_j f_i = 0$ and $f_i (f_i + 1) = 0$, not to
-mention that there are $m 2^n$ such multiples while $\mathcal{B}[x]$ has
-dimension only $2^n$.
+mention the fact that there are $m 2^n$ such multiples while $\mathcal{B}[x]$
+has dimension only $2^n$.
 
 Let $I_D$ denote the vector space spanned by the $t f_i$ for all monomials $t$
 of degree less than or equal to $D-2$ and all $1 \leq i \leq m$. Generally
 speaking, we expect to have $\dim I_3 = (n+1) m$ and
 $\dim I_4 = (n^2 - m + n + 1)m/2 $, with the assumption that there are no
-surprising algebraic dependencies between the $f_i$'s except the trivial
-ones. Estimating the dimension of $I_D$ for larger $D$ is more complicated. In
-general, it depends not only on $n$ and $m$ but on the actual polynomials
-$f_1, \dots, f_m$ (it is related to the Hilbert function of the ideal,
-see~\cite{Ideals_varieties_algos}). The usual regularity and semi-regularity
-assumptions state that it is a fixed function of $n$ and $m$, at least when $D$
-is not too large. 
-%The lowest degree $D$ at which the linearization condition is
-%satisfied is called the \textit{degree of regularity}.
-%
-%\TODO{[Charles] je ne parviens pas à trouver un argument simple pour affirmer que
-%  $D=n$ garantit que c'est bon, donc qu'il existe un plus petit $D \leq n$ qui
-%  convient.}
-
+surprising algebraic dependencies between the $f_i$'s except the trivial ones
+mentioned above. Estimating the dimension of $I_D$ for larger $D$ is more
+complicated. In general, it depends not only on $n$ and $m$ but on the actual
+polynomials $f_1, \dots, f_m$ (it is related to the Hilbert function of the
+ideal, see~\cite{Ideals_varieties_algos}). The usual regularity and
+semi-regularity assumptions state up to a certain degree, the trivial linear
+dependencies are the only ones, which means that $\dim I_D$ is a fixed function
+of $n$ and $m$ (independently of the actual polynomials), at least when $D$ is
+not too large.
 
 Several algorithms related to Groebner basis computation use these
 multiples~\cite{F4,F5,CourtoisKPS00,BardetFSS13,JouxV17}. This follows from the
 observation by Lazard~\cite{Lazard83} that the $t f_i$ are linearly independent
 in $\mathbb{K}[x]$ when the $f_i$ form a Groebner basis; \textit{a contrario},
-echelonizing multiples $t f_i$ of sufficiently high degree provides a way to
-compute a Groebner basis of $\{f_1, \dots, f_m\}$.
+echelonizing the $t f_i$ of sufficiently high degree provides a way to compute a
+Groebner basis of $\{f_1, \dots, f_m\}$.
 
 In this section, we explore how the common method of using higher-degree
 multiples can be used to extend Algorithm~\ref{the-algo}. Two different
 directions naturally suggest themselves. One of them leads to the
-\textsf{Crossbred} algorithm of Joux-Vitse~\cite{JouxV17}, the other one
-essentially gives the algorithm of Lazard~\cite{Lazard83}, from which
-\textsf{XL}~\cite{CourtoisKPS00} and \textsf{BooleanSolve}~\cite{BardetFSS13}
-are derived.
-
+\textsf{Crossbred} algorithm of Joux-Vitse~\cite{JouxV17}, the other one gives
+the \textsf{FXL}~\cite{CourtoisKPS00} and the
+\textsf{BooleanSolve}~\cite{BardetFSS13} algorithms.
 
 \subsection{The \textsf{Crossbred} algorithm}
 \label{sec:JV}
 
 The \textsf{Crossbred} algorithm can be described as follows. Proceed exactly as
-in section~\ref{sec:description}, but replace the original polynomials
+in Algorithm~\ref{the-algo}, but replace the original polynomials
 $f_1, \dots, f_m$ by the degree-$D$ multiples $t f_j$ where $t$ ranges across
 all monomials of degree less than or equal to $D-2$ and $1 \leq j \leq
 m$. Algorithm~\ref{the-algo} is in fact exactly the \textsf{Crossbred} algorithm
@@ -706,12 +715,14 @@ the subspace $\mathcal{Z}$ yields degree-$D$ polynomials where the
 $z_1, \dots, z_v$ variables only occur linearly.
 
 Working with higher-degree multiples enables the use of larger values of $v$,
-and therefore reduces the need to guess variables. For instance, let us see what
-happens when $D=3$. Starting from the $m$ initial polynomials, we obtain
-$(n+1)m$ (hopefully) linearly independent degree-3 multiples. To obtain a basis
-of $\mathcal{L}$, which is the intersection of the linear span of the multiples
-with $\mathcal{Z}$, we need to eliminate monomials of the form
-$z_jz_k, y_iz_jz_k$ and $z_iz_jz_k$. The number of these ``bad'' monomials is
+and therefore reduces the number of variables that must be guessed. For
+instance, let us see what happens when $D=3$. Starting from the $m$ initial
+polynomials, we obtain $(n+1)m$ (hopefully) linearly independent degree-3
+multiples. To obtain a basis of $\mathcal{L}$, which is the intersection of the
+linear span of the multiples with $\mathcal{Z}$, we need to eliminate the
+``bad'' monomials that contain more than one variable of $z$. These are
+monomials of the form $z_jz_k, y_iz_jz_k$ and $z_iz_jz_k$. Their number is easy
+to determine:
 \[
   \#\{z_iz_j\} + \#\{y_iz_iz_j\} +\#\{z_iz_jz_k\} = \binom{v}{2} + (n-v)\binom{v}{2} +\binom{v}{3} = v(v - 1)(3n - 2v + 1) / 6.
 \]
@@ -736,11 +747,11 @@ $D$ require sparse linear algebra on matrices of size $\bigO{n^D}$, which
 quickly become complex.
 
 
-\subsection{The \textsf{BooleanSolve} and \textsf{XL} Algorithms}
+\subsection{The \textsf{FXL} and \textsf{BooleanSolve} Algorithms}
 
 Lastly, we consider a different way to extend Algorithm~\ref{the-algo} with
-higher-degree multiples: solving the higher-degree system by plain
-linearization.
+higher-degree multiples: guess some variables, then solve the higher-degree
+system by plain linearization. More precisely,
 
 \begin{enumerate}
 \item Generate the degree-$D$ multiples of the form $t f_i$ where $t$ ranges
@@ -752,7 +763,7 @@ linearization.
   linearization.
 \end{enumerate}
 
-The \textsf{BooleanSolve} and \textsf{XL} algorithms essentially do this, with
+The \textsf{FXL} and \textsf{BooleanSolve} algorithms essentially do this, with
 steps 1 and 2 in reverse order (they commute). The parameter $v$ is again chosen
 as the highest value where the linearization condition is satisfied,
 \textit{i.e.} when there are more linearly independent multiples than
