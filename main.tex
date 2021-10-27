@@ -60,7 +60,8 @@
   methods. The main idea fits in a single sentence: guess enough variables so
   that the remaining quadratic equations can be solved by linearization
   (\textit{i.e.} by considering each remaining monomial as an independent
-  variable and solving the resulting linear system). Under strong heuristic
+  variable and solving the resulting linear system) and restart until the solution
+  is found. Under strong heuristic
   assumptions, this finds all the solutions of $m$ quadratic polynomials in $n$
   variables with $\bigOsoft{2^{n-\sqrt{2m}}}$ operations. Although the best
   known algorithms require exponentially less time, the present technique has
